@@ -1,28 +1,25 @@
-# Propuesta TP DSW
+# DSW: Desarrollo de Software
+Repo con información general de la cátedra
 
-## Grupo
-### Integrantes
-* legajo - Apellido(s), Nombre(s)
+## Media
+* [Canal de Youtube](https://www.youtube.com/@dsw-utn).
+* [Grupo de Telegram](https://bit.ly/dsw-telegram). Una vez unido se recomienda silenciar los topics de las comisiones a las que no pertenece y solo dejar activos el de su comisión y año, General, TP y PoC.
+* Repos:
+    * [TP](https://www.github.com/utnfrrodsw/tp)
+    * [PoC](https://www.github.com/utnfrrodsw/poc)
+    * Material de Back-end:
+        * [Youtube playlist](https://youtube.com/playlist?list=PLstUYTrWtZx0Vv18QId7UHN5h2trJwUlD&si=qOkk08s4u49a_z68)
+        * [Código Fuente](https://www.github.com/utnfrrodsw/material-be) de los videos
+        * [Material teórico](https://www.github.com/utnfrrodsw/clases) escrito
+        * [Temario](https://www.github.com/utnfrrodsw/clases/blob/main/backend/topics.md)
 
-### Repositorios
-* [frontend app](http://hyperlinkToGihubOrGitlab)
-* [backend app](http://hyperlinkToGihubOrGitlab)
-*Nota*: si utiliza un monorepo indicar un solo link con fullstack app.
-
-## Tema
-### Descripción
-*2 a 6 líneas describiendo el negocio (menos es más)*
-
-### Modelo
-![imagen del modelo]()
-
-*Nota*: incluir un link con la imagen de un modelo, puede ser modelo de dominio, diagrama de clases, DER. Si lo prefieren pueden utilizar diagramas con [Mermaid](https://mermaid.js.org) en lugar de imágenes.
-
-## Alcance Funcional 
-
-### Alcance Mínimo
-
-*Nota*: el siguiente es un ejemplo para un grupo de 3 integrantes para un sistema de hotel. El 
+## Profesores
+* Arnold, Joel
+* Bressano, Mario
+* Luna, Lucas
+* Meca, Adrián
+* Otaduy, Andrés
+* Tabacman, Ricardo
 
 Regularidad:
 |Req|Detalle|
