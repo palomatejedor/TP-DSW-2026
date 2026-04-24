@@ -24,10 +24,10 @@ A través de una interfaz moderna y fácil de usar, el sistema busca reemplazar 
 ### ALCANCE MINIMO
 |Req|Detail
 |-|-|
-|Simple CRUD|1. CRUD-Socio<br>2. CRUD-Actividad o Plan|
-|Dependent CRUD|1. CRUD-Reserva {depend on} Socio<br>2. CRUD-Inscripción {depend on} Socio y Deporte|
-|Listado + Detalle|1. Listado de planes filtrado por tipo o categoría => muestra nombre, precio, descripción => detalle muestra información completa del plan<br>2. Listado de reservas por socio => muestra fecha, espacio, estado => detalle muestra toda la información de la reserva|
-|CUU / EPIC|1. Realizar reserva de espacio (quincho)<br>2. Inscribirse a actividad deportiva|
+|Simple CRUD|1. CRUD-Socio<br>2. |
+|Dependent CRUD| CRUD-Inscripción {depend on} Socio y Actividad|
+|Listado + Detalle| Listado de planes filtrado por tipo o categoría => muestra nombre, precio, descripción => detalle muestra información completa del plan<br>2.|
+|CUU / EPIC| Inscribirse a actividad deportiva|
 
 ---
 
