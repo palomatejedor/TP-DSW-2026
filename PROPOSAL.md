@@ -24,9 +24,9 @@ A través de una interfaz moderna y fácil de usar, el sistema busca reemplazar 
 ### ALCANCE MINIMO
 |Req|Detail
 |-|-|
-|Simple CRUD|1. CRUD-Socio<br>2. |
-|Dependent CRUD| CRUD-Inscripción {depend on} Socio y Actividad|
-|Listado + Detalle| Listado de planes filtrado por tipo o categoría => muestra nombre, precio, descripción => detalle muestra información completa del plan<br>2.|
+|Simple CRUD|1. CRUD-Socio<br> |
+|Dependent CRUD|1. CRUD-Inscripción {depend on} Socio y Actividad|
+|Listado + Detalle|1. Listado de planes filtrado por tipo o categoría => muestra nombre, precio, descripción => detalle muestra información completa del plan<br>|
 |CUU / EPIC| Inscribirse a actividad deportiva|
 
 ---
