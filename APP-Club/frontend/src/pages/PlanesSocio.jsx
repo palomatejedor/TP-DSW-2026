@@ -10,7 +10,8 @@ function PlanesSocio() {
   const [planSeleccionado, setPlanSeleccionado] = useState(null)
   const [exito, setExito] = useState('')
 
-  const SOCIO_ID = 1 // temporal hasta tener sesión real
+  const usuario = JSON.parse(localStorage.getItem('usuario') || '{}')
+const SOCIO_ID = usuario.socioId
 
   useEffect(() => {
     cargarDatos()
