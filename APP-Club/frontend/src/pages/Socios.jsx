@@ -10,12 +10,10 @@ function Socios() {
   const [socioEditando, setSocioEditando] = useState(null)
   const [socioBaja, setSocioBaja] = useState(null)
   const [fechaBaja, setFechaBaja] = useState('')
-  const [form, setForm] = useState({ dni: '', nombre: '', apellido: '', mail: '', categoria: 'Adulto', estado: 'Activo', fecha_alta: '', fecha_baja: null })
+  const [form, setForm] = useState({ dni: '', nombre: '', apellido: '', mail: '', categoria: 'Adulto', estado: 'Activo', fecha_nacimiento: '', fecha_baja: null })
   const [errores, setErrores] = useState({})
 
-  useEffect(() => {
-    cargarSocios()
-  }, [])
+  useEffect(() => { cargarSocios() }, [])
 
   const cargarSocios = async () => {
     const data = await api.getSocios()
@@ -24,27 +22,53 @@ function Socios() {
 
   const validar = () => {
     const e = {}
-    if (!form.dni || isNaN(form.dni) || String(form.dni).length < 7) e.dni = 'DNI inválido'
+    if (!form.dni || !/^\d{7,8}$/.test(String(form.dni))) {
+      e.dni = 'El DNI debe tener 7 u 8 dígitos numéricos'
+    } else {
+      const dniDuplicado = socios.some(s => String(s.dni) === String(form.dni) && s.id !== socioEditando?.id)
+      if (dniDuplicado) e.dni = 'Ya existe un socio con ese DNI'
+    }
     if (!form.nombre.trim()) e.nombre = 'El nombre es obligatorio'
     if (!form.apellido.trim()) e.apellido = 'El apellido es obligatorio'
-    if (!form.mail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.mail)) e.mail = 'Email inválido'
-    if (!form.fecha_alta) e.fecha_alta = 'La fecha de alta es obligatoria'
+    if (!form.mail.trim()) {
+      e.mail = 'El mail es obligatorio'
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.mail)) {
+      e.mail = 'El formato del mail es inválido'
+    } else {
+      const mailDuplicado = socios.some(s => s.mail === form.mail && s.id !== socioEditando?.id)
+      if (mailDuplicado) e.mail = 'Ya existe un socio con ese mail'
+    }
+    if (!form.fecha_nacimiento) {
+      e.fecha_nacimiento = 'La fecha de nacimiento es obligatoria'
+    } else {
+      const hoy = new Date()
+      const nacimiento = new Date(form.fecha_nacimiento)
+      if (nacimiento >= hoy) e.fecha_nacimiento = 'La fecha de nacimiento no puede ser futura'
+      const edad = hoy.getFullYear() - nacimiento.getFullYear()
+      if (edad > 120) e.fecha_nacimiento = 'La fecha de nacimiento no es válida'
+    }
     return e
   }
 
   const abrirModalNuevo = () => {
     setSocioEditando(null)
-    setForm({ dni: '', nombre: '', apellido: '', mail: '', categoria: 'Adulto', estado: 'Activo', fecha_alta: '', fecha_baja: null })
+    setForm({ dni: '', nombre: '', apellido: '', mail: '', categoria: 'Adulto', estado: 'Activo', fecha_nacimiento: '', fecha_baja: null })
     setErrores({})
     setShowModal(true)
   }
 
-  const abrirModalEditar = (socio) => {
-    setSocioEditando(socio)
-    setForm({ ...socio })
-    setErrores({})
-    setShowModal(true)
-  }
+const abrirModalEditar = (socio) => {
+  setSocioEditando(socio)
+  setForm({
+    ...socio,
+    fecha_nacimiento: socio.fecha_nacimiento ? socio.fecha_nacimiento.toString().split('T')[0] : '',
+    fecha_alta: socio.fecha_alta ? socio.fecha_alta.toString().split('T')[0] : '',
+    fecha_baja: socio.fecha_baja ? socio.fecha_baja.toString().split('T')[0] : null,
+  })
+  setErrores({})
+  setShowModal(true)
+}
+
 
   const abrirModalBaja = (socio) => {
     setSocioBaja(socio)
@@ -58,7 +82,7 @@ function Socios() {
     if (socioEditando) {
       await api.updateSocio(socioEditando.id, form)
     } else {
-      await api.createSocio(form)
+      await api.createSocio({ ...form, fecha_alta: new Date().toISOString().split('T')[0] })
     }
     await cargarSocios()
     setShowModal(false)
@@ -89,13 +113,13 @@ function Socios() {
         <Table bordered hover responsive className="shadow-sm">
           <thead className="table-dark">
             <tr>
-            <th>DNI</th><th>Nombre</th><th>Apellido</th><th>Mail</th><th>Categoría</th><th>Plan</th><th>Estado</th><th>Fecha baja</th><th>Acciones</th>
+              <th>DNI</th><th>Nombre</th><th>Apellido</th><th>Mail</th><th>Categoría</th><th>Plan</th><th>Estado</th><th>Fecha baja</th><th>Acciones</th>
             </tr>
           </thead>
           <tbody>
             {socios.map(s => (
               <tr key={s.id}>
-               <td>{s.dni}</td>
+                <td>{s.dni}</td>
                 <td>{s.nombre}</td>
                 <td>{s.apellido}</td>
                 <td>{s.mail}</td>
@@ -143,6 +167,11 @@ function Socios() {
               <Form.Control.Feedback type="invalid">{errores.mail}</Form.Control.Feedback>
             </Form.Group>
             <Form.Group className="mb-3">
+              <Form.Label>Fecha de nacimiento</Form.Label>
+              <Form.Control type="date" value={form.fecha_nacimiento} onChange={e => setForm({ ...form, fecha_nacimiento: e.target.value })} isInvalid={!!errores.fecha_nacimiento} />
+              <Form.Control.Feedback type="invalid">{errores.fecha_nacimiento}</Form.Control.Feedback>
+            </Form.Group>
+            <Form.Group className="mb-3">
               <Form.Label>Categoría</Form.Label>
               <Form.Select value={form.categoria} onChange={e => setForm({ ...form, categoria: e.target.value })}>
                 <option>Adulto</option>
@@ -151,18 +180,15 @@ function Socios() {
                 <option>Tercera edad</option>
               </Form.Select>
             </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>Estado</Form.Label>
-              <Form.Select value={form.estado} onChange={e => setForm({ ...form, estado: e.target.value })}>
-                <option>Activo</option>
-                <option>Inactivo</option>
-              </Form.Select>
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>Fecha de alta</Form.Label>
-              <Form.Control type="date" value={form.fecha_alta} onChange={e => setForm({ ...form, fecha_alta: e.target.value })} isInvalid={!!errores.fecha_alta} />
-              <Form.Control.Feedback type="invalid">{errores.fecha_alta}</Form.Control.Feedback>
-            </Form.Group>
+            {socioEditando && (
+              <Form.Group className="mb-3">
+                <Form.Label>Estado</Form.Label>
+                <Form.Select value={form.estado} onChange={e => setForm({ ...form, estado: e.target.value })}>
+                  <option>Activo</option>
+                  <option>Inactivo</option>
+                </Form.Select>
+              </Form.Group>
+            )}
           </Form>
         </Modal.Body>
         <Modal.Footer>
