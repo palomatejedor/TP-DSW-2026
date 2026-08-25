@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Login from './pages/Login'
+import RecuperarContrasena from './pages/RecuperarContrasena'
 import DashboardAdmin from './pages/DashboardAdmin'
 import DashboardSocio from './pages/DashboardSocio'
 import Socios from './pages/Socios'
@@ -18,6 +19,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Login />} />
+        <Route path="/recuperar-contrasena" element={<RecuperarContrasena />} />
         <Route path="/admin" element={<DashboardAdmin />} />
         <Route path="/admin/socios" element={<Socios />} />
         <Route path="/admin/actividades" element={<Actividades />} />

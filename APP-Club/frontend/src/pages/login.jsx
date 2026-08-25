@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { Form, Button, Alert } from 'react-bootstrap'
 import logo from '../assets/logo.png'
 import { api } from '../api'
@@ -18,10 +18,13 @@ function Login() {
       const data = await api.login(email, password)
       if (data.error) {
         setError('Email o contraseña incorrectos')
-      } else if (data.rol === 'admin') {
-        navigate('/admin')
-      } else if (data.rol === 'socio') {
-        navigate('/socio')
+      } else {
+        localStorage.setItem('usuario', JSON.stringify(data))
+        if (data.rol === 'admin') {
+          navigate('/admin')
+        } else if (data.rol === 'socio') {
+          navigate('/socio')
+        }
       }
     } catch {
       setError('Error al conectar con el servidor')
@@ -123,9 +126,9 @@ function Login() {
           </Form>
 
           <div className="text-center mt-3">
-            <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.8rem' }}>
-              ¿Olvidaste tu contraseña? Contactá al administrador
-            </span>
+            <Link to="/recuperar-contrasena" style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.8rem', textDecoration: 'none' }}>
+              ¿Olvidaste tu contraseña?
+            </Link>
           </div>
         </div>
 

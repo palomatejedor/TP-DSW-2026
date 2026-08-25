@@ -2,7 +2,11 @@ const BASE_URL = "http://localhost:3000"
 
 export const api = {
   // Socios
-  getSocios: () => fetch(`${BASE_URL}/socios`).then(r => r.json()),
+  getSocios: (params = {}) => {
+    const query = new URLSearchParams(params).toString()
+    return fetch(`${BASE_URL}/socios?${query}`).then(r => r.json())
+  },
+  getSocioByMail: (mail) => fetch(`${BASE_URL}/socios/by-mail/${encodeURIComponent(mail)}`).then(r => r.json()),
   createSocio: (data) => fetch(`${BASE_URL}/socios`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then(r => r.json()),
   updateSocio: (id, data) => fetch(`${BASE_URL}/socios/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then(r => r.json()),
   deleteSocio: (id) => fetch(`${BASE_URL}/socios/${id}`, { method: "DELETE" }).then(r => r.json()),
@@ -33,4 +37,11 @@ export const api = {
 
   // Login
   login: (mail, contraseña) => fetch(`${BASE_URL}/usuarios/login`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mail, contraseña }) }).then(r => r.json()),
+
+  // Recuperar contraseña
+  recuperarContrasena: (numeroSocio, dni, mail) => fetch(`${BASE_URL}/usuarios/recuperar-contrasena`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ numeroSocio, dni, mail })
+  }).then(r => r.json()),
 }

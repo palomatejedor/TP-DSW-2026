@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import NavBar from '../components/Navbar'
-import { Container, Table, Button, Modal, Form, Badge } from 'react-bootstrap'
+import { Container, Table, Button, Modal, Form, Badge, Row, Col, Pagination } from 'react-bootstrap'
 import { api } from '../api'
 
 function Socios() {
@@ -13,11 +13,44 @@ function Socios() {
   const [form, setForm] = useState({ dni: '', nombre: '', apellido: '', mail: '', categoria: 'Adulto', estado: 'Activo', fecha_nacimiento: '', fecha_baja: null })
   const [errores, setErrores] = useState({})
 
-  useEffect(() => { cargarSocios() }, [])
+  // --- Filtros y paginación ---
+  const [filtros, setFiltros] = useState({ nombre: '', apellido: '', dni: '', estado: '', categoria: '' })
+  const [page, setPage] = useState(1)
+  const [limit] = useState(10)
+  const [totalPages, setTotalPages] = useState(1)
+  const [total, setTotal] = useState(0)
 
-  const cargarSocios = async () => {
-    const data = await api.getSocios()
-    setSocios(data)
+  // Debounce: espera 400ms tras dejar de tipear antes de disparar la búsqueda
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setPage(1)
+      cargarSocios(1)
+    }, 400)
+    return () => clearTimeout(timeout)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtros])
+
+  useEffect(() => {
+    cargarSocios(page)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page])
+
+  const cargarSocios = async (pageActual = page) => {
+    const params = { page: pageActual, limit, ...filtros }
+    // saca los filtros vacíos para no mandarlos como query param
+    Object.keys(params).forEach(k => { if (params[k] === '') delete params[k] })
+    const res = await api.getSocios(params)
+    setSocios(res.data)
+    setTotalPages(res.pagination.totalPages)
+    setTotal(res.pagination.total)
+  }
+
+  const handleFiltroChange = (campo, valor) => {
+    setFiltros(prev => ({ ...prev, [campo]: valor }))
+  }
+
+  const limpiarFiltros = () => {
+    setFiltros({ nombre: '', apellido: '', dni: '', estado: '', categoria: '' })
   }
 
   const validar = () => {
@@ -57,18 +90,17 @@ function Socios() {
     setShowModal(true)
   }
 
-const abrirModalEditar = (socio) => {
-  setSocioEditando(socio)
-  setForm({
-    ...socio,
-    fecha_nacimiento: socio.fecha_nacimiento ? socio.fecha_nacimiento.toString().split('T')[0] : '',
-    fecha_alta: socio.fecha_alta ? socio.fecha_alta.toString().split('T')[0] : '',
-    fecha_baja: socio.fecha_baja ? socio.fecha_baja.toString().split('T')[0] : null,
-  })
-  setErrores({})
-  setShowModal(true)
-}
-
+  const abrirModalEditar = (socio) => {
+    setSocioEditando(socio)
+    setForm({
+      ...socio,
+      fecha_nacimiento: socio.fecha_nacimiento ? socio.fecha_nacimiento.toString().split('T')[0] : '',
+      fecha_alta: socio.fecha_alta ? socio.fecha_alta.toString().split('T')[0] : '',
+      fecha_baja: socio.fecha_baja ? socio.fecha_baja.toString().split('T')[0] : null,
+    })
+    setErrores({})
+    setShowModal(true)
+  }
 
   const abrirModalBaja = (socio) => {
     setSocioBaja(socio)
@@ -84,22 +116,41 @@ const abrirModalEditar = (socio) => {
     } else {
       await api.createSocio({ ...form, fecha_alta: new Date().toISOString().split('T')[0] })
     }
-    await cargarSocios()
+    await cargarSocios(page)
     setShowModal(false)
   }
 
   const confirmarBaja = async () => {
     if (!fechaBaja) return
     await api.updateSocio(socioBaja.id, { ...socioBaja, estado: 'Inactivo', fecha_baja: fechaBaja })
-    await cargarSocios()
+    await cargarSocios(page)
     setShowBajaModal(false)
   }
 
   const eliminar = async (id) => {
     if (confirm('¿Seguro que querés eliminar este socio?')) {
       await api.deleteSocio(id)
-      await cargarSocios()
+      await cargarSocios(page)
     }
+  }
+
+  const renderPaginacion = () => {
+    if (totalPages <= 1) return null
+    const items = []
+    for (let i = 1; i <= totalPages; i++) {
+      items.push(
+        <Pagination.Item key={i} active={i === page} onClick={() => setPage(i)}>
+          {i}
+        </Pagination.Item>
+      )
+    }
+    return (
+      <Pagination className="justify-content-center mt-3">
+        <Pagination.Prev disabled={page === 1} onClick={() => setPage(p => p - 1)} />
+        {items}
+        <Pagination.Next disabled={page === totalPages} onClick={() => setPage(p => p + 1)} />
+      </Pagination>
+    )
   }
 
   return (
@@ -110,6 +161,56 @@ const abrirModalEditar = (socio) => {
           <h4 className="fw-bold mb-0">Socios</h4>
           <Button variant="dark" onClick={abrirModalNuevo}>+ Nuevo socio</Button>
         </div>
+
+        <div className="bg-light rounded p-3 mb-3">
+          <Row className="g-2">
+            <Col md={2}>
+              <Form.Control
+                placeholder="Nombre"
+                value={filtros.nombre}
+                onChange={e => handleFiltroChange('nombre', e.target.value)}
+              />
+            </Col>
+            <Col md={2}>
+              <Form.Control
+                placeholder="Apellido"
+                value={filtros.apellido}
+                onChange={e => handleFiltroChange('apellido', e.target.value)}
+              />
+            </Col>
+            <Col md={2}>
+              <Form.Control
+                placeholder="DNI"
+                value={filtros.dni}
+                onChange={e => handleFiltroChange('dni', e.target.value)}
+              />
+            </Col>
+            <Col md={2}>
+              <Form.Select value={filtros.estado} onChange={e => handleFiltroChange('estado', e.target.value)}>
+                <option value="">Todos los estados</option>
+                <option value="Activo">Activo</option>
+                <option value="Inactivo">Inactivo</option>
+              </Form.Select>
+            </Col>
+            <Col md={2}>
+              <Form.Select value={filtros.categoria} onChange={e => handleFiltroChange('categoria', e.target.value)}>
+                <option value="">Todas las categorías</option>
+                <option value="Adulto">Adulto</option>
+                <option value="Adolescente">Adolescente</option>
+                <option value="Infantil">Infantil</option>
+                <option value="Tercera edad">Tercera edad</option>
+              </Form.Select>
+            </Col>
+            <Col md={2}>
+              <Button variant="outline-secondary" className="w-100" onClick={limpiarFiltros}>
+                Limpiar
+              </Button>
+            </Col>
+          </Row>
+        </div>
+
+        <p className="text-muted small mb-2">{total} socio{total !== 1 ? 's' : ''} encontrado{total !== 1 ? 's' : ''}</p>
+
         <Table bordered hover responsive className="shadow-sm">
           <thead className="table-dark">
             <tr>
@@ -117,6 +218,11 @@ const abrirModalEditar = (socio) => {
             </tr>
           </thead>
           <tbody>
+            {socios.length === 0 && (
+              <tr>
+                <td colSpan={9} className="text-center text-muted py-4">No se encontraron socios</td>
+              </tr>
+            )}
             {socios.map(s => (
               <tr key={s.id}>
                 <td>{s.dni}</td>
@@ -138,6 +244,8 @@ const abrirModalEditar = (socio) => {
             ))}
           </tbody>
         </Table>
+
+        {renderPaginacion()}
       </Container>
 
       <Modal show={showModal} onHide={() => setShowModal(false)}>
