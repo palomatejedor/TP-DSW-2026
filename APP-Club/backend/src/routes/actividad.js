@@ -4,9 +4,18 @@ const { AppDataSource } = require("../database")
 
 const getActividadRepo = () => AppDataSource.getRepository("Actividad")
 
+// GET /actividades -> incluye cupo_ocupado (cantidad de inscriptos activos, sin contar bajas)
 router.get("/", async (req, res) => {
   try {
-    const actividades = await getActividadRepo().find()
+    const actividades = await getActividadRepo()
+      .createQueryBuilder("actividad")
+      .loadRelationCountAndMap(
+        "actividad.cupo_ocupado",
+        "actividad.inscripciones",
+        "inscripcion",
+        (qb) => qb.andWhere("inscripcion.estado != :baja", { baja: "Baja" })
+      )
+      .getMany()
     res.json(actividades)
   } catch (err) {
     res.status(500).json({ error: err.message })
