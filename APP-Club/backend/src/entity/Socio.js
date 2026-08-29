@@ -23,6 +23,23 @@ module.exports = new EntitySchema({
       eager: true,
       nullable: true,
     },
+    // Titular del grupo familiar al que pertenece este socio (null = independiente o es el titular).
+    // OJO: sin eager (a diferencia de "plan") porque al ser una relación que apunta a la misma
+    // entidad Socio, con eager:true TypeORM entra en loop infinito al armar la consulta.
+    // Por eso, en socio.js se pide explícitamente con leftJoinAndSelect o relations: ["titular"]
+    // en cada lugar donde hace falta.
+    titular: {
+      type: "many-to-one",
+      target: "Socio",
+      joinColumn: true,
+      nullable: true,
+    },
+    // Integrantes del grupo familiar, si este socio es el titular
+    miembros: {
+      type: "one-to-many",
+      target: "Socio",
+      inverseSide: "titular",
+    },
     inscripciones: {
       type: "one-to-many",
       target: "Inscripcion",
