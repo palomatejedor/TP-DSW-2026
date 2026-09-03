@@ -7,7 +7,7 @@ function Actividades() {
   const [actividades, setActividades] = useState([])
   const [showModal, setShowModal] = useState(false)
   const [actividadEditando, setActividadEditando] = useState(null)
-  const [form, setForm] = useState({ nombre: '', descripcion: '', dias: '', horario: '', cupo_maximo: '', estado: 'Activo' })
+  const [form, setForm] = useState({ nombre: '', descripcion: '', dias: '', horario_desde: '', horario_hasta: '', cupo_maximo: '', estado: 'Activo' })
   const [errores, setErrores] = useState({})
 
   useEffect(() => {
@@ -24,21 +24,29 @@ function Actividades() {
     if (!form.nombre.trim()) e.nombre = 'El nombre es obligatorio'
     if (!form.descripcion.trim()) e.descripcion = 'La descripción es obligatoria'
     if (!form.dias.trim()) e.dias = 'Los días son obligatorios'
-    if (!form.horario.trim()) e.horario = 'El horario es obligatorio'
+    if (!form.horario_desde) e.horario_desde = 'El horario de inicio es obligatorio'
+    if (!form.horario_hasta) e.horario_hasta = 'El horario de fin es obligatorio'
+    if (form.horario_desde && form.horario_hasta && form.horario_hasta <= form.horario_desde) {
+      e.horario_hasta = 'Debe ser posterior al horario de inicio'
+    }
     if (!form.cupo_maximo || isNaN(form.cupo_maximo) || form.cupo_maximo <= 0) e.cupo_maximo = 'El cupo debe ser un número mayor a 0'
     return e
   }
 
   const abrirModalNuevo = () => {
     setActividadEditando(null)
-    setForm({ nombre: '', descripcion: '', dias: '', horario: '', cupo_maximo: '', estado: 'Activo' })
+    setForm({ nombre: '', descripcion: '', dias: '', horario_desde: '', horario_hasta: '', cupo_maximo: '', estado: 'Activo' })
     setErrores({})
     setShowModal(true)
   }
 
   const abrirModalEditar = (actividad) => {
     setActividadEditando(actividad)
-    setForm({ ...actividad })
+    setForm({
+      ...actividad,
+      horario_desde: actividad.horario_desde ? actividad.horario_desde.slice(0, 5) : '',
+      horario_hasta: actividad.horario_hasta ? actividad.horario_hasta.slice(0, 5) : '',
+    })
     setErrores({})
     setShowModal(true)
   }
@@ -62,6 +70,8 @@ function Actividades() {
     }
   }
 
+  const formatHora = (h) => h ? h.slice(0, 5) : '-'
+
   return (
     <>
       <NavBar rol="admin" />
@@ -73,20 +83,33 @@ function Actividades() {
         <Table bordered hover responsive className="shadow-sm">
           <thead className="table-dark">
             <tr>
-              <th>Nombre</th><th>Descripción</th><th>Días</th><th>Horario</th><th>Cupo máximo</th><th>Estado</th><th>Acciones</th>
+              <th>Nombre</th><th>Descripción</th><th>Días</th><th>Horario</th><th>Cupo máximo</th><th>Inscriptos</th><th>Estado</th><th>Acciones</th>
             </tr>
           </thead>
           <tbody>
-            {actividades.map(a => (
-              <tr key={a.id}>
-                <td>{a.nombre}</td><td>{a.descripcion}</td><td>{a.dias}</td><td>{a.horario}</td><td>{a.cupo_maximo}</td>
-                <td><Badge bg={a.estado === 'Activo' ? 'success' : 'secondary'}>{a.estado}</Badge></td>
-                <td>
-                  <Button size="sm" variant="outline-dark" className="me-2" onClick={() => abrirModalEditar(a)}>Editar</Button>
-                  <Button size="sm" variant="outline-danger" onClick={() => eliminar(a.id)}>Eliminar</Button>
-                </td>
-              </tr>
-            ))}
+            {actividades.map(a => {
+              const ocupado = a.cupo_ocupado || 0
+              const lleno = ocupado >= a.cupo_maximo
+              return (
+                <tr key={a.id}>
+                  <td>{a.nombre}</td>
+                  <td>{a.descripcion}</td>
+                  <td>{a.dias}</td>
+                  <td>{formatHora(a.horario_desde)} - {formatHora(a.horario_hasta)}</td>
+                  <td>{a.cupo_maximo}</td>
+                  <td>
+                    <Badge bg={lleno ? 'danger' : 'secondary'}>
+                      {ocupado} {lleno ? '(lleno)' : ''}
+                    </Badge>
+                  </td>
+                  <td><Badge bg={a.estado === 'Activo' ? 'success' : 'secondary'}>{a.estado}</Badge></td>
+                  <td>
+                    <Button size="sm" variant="outline-dark" className="me-2" onClick={() => abrirModalEditar(a)}>Editar</Button>
+                    <Button size="sm" variant="outline-danger" onClick={() => eliminar(a.id)}>Eliminar</Button>
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </Table>
       </Container>
@@ -97,7 +120,7 @@ function Actividades() {
         </Modal.Header>
         <Modal.Body>
           <Form>
-            {[['nombre', 'Nombre'], ['descripcion', 'Descripción'], ['dias', 'Días'], ['horario', 'Horario']].map(([campo, label]) => (
+            {[['nombre', 'Nombre'], ['descripcion', 'Descripción'], ['dias', 'Días']].map(([campo, label]) => (
               <Form.Group className="mb-3" key={campo}>
                 <Form.Label>{label}</Form.Label>
                 <Form.Control
@@ -108,6 +131,28 @@ function Actividades() {
                 <Form.Control.Feedback type="invalid">{errores[campo]}</Form.Control.Feedback>
               </Form.Group>
             ))}
+            <div className="d-flex gap-2">
+              <Form.Group className="mb-3 flex-fill">
+                <Form.Label>Horario desde</Form.Label>
+                <Form.Control
+                  type="time"
+                  value={form.horario_desde}
+                  onChange={e => setForm({ ...form, horario_desde: e.target.value })}
+                  isInvalid={!!errores.horario_desde}
+                />
+                <Form.Control.Feedback type="invalid">{errores.horario_desde}</Form.Control.Feedback>
+              </Form.Group>
+              <Form.Group className="mb-3 flex-fill">
+                <Form.Label>Horario hasta</Form.Label>
+                <Form.Control
+                  type="time"
+                  value={form.horario_hasta}
+                  onChange={e => setForm({ ...form, horario_hasta: e.target.value })}
+                  isInvalid={!!errores.horario_hasta}
+                />
+                <Form.Control.Feedback type="invalid">{errores.horario_hasta}</Form.Control.Feedback>
+              </Form.Group>
+            </div>
             <Form.Group className="mb-3">
               <Form.Label>Cupo máximo</Form.Label>
               <Form.Control

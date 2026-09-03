@@ -7,6 +7,7 @@ export const api = {
     return fetch(`${BASE_URL}/socios?${query}`).then(r => r.json())
   },
   getSocioByMail: (mail) => fetch(`${BASE_URL}/socios/by-mail/${encodeURIComponent(mail)}`).then(r => r.json()),
+  getFamilia: (id) => fetch(`${BASE_URL}/socios/${id}/familia`).then(r => r.json()),
   createSocio: (data) => fetch(`${BASE_URL}/socios`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then(r => r.json()),
   updateSocio: (id, data) => fetch(`${BASE_URL}/socios/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then(r => r.json()),
   deleteSocio: (id) => fetch(`${BASE_URL}/socios/${id}`, { method: "DELETE" }).then(r => r.json()),

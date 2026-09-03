@@ -4,6 +4,7 @@ import RecuperarContrasena from './pages/RecuperarContrasena'
 import DashboardAdmin from './pages/DashboardAdmin'
 import DashboardSocio from './pages/DashboardSocio'
 import Socios from './pages/Socios'
+import GrupoFamiliar from './pages/GrupoFamiliar'
 import Actividades from './pages/Actividades'
 import Planes from './pages/Planes'
 import Inscripciones from './pages/Inscripciones'
@@ -22,6 +23,7 @@ function App() {
         <Route path="/recuperar-contrasena" element={<RecuperarContrasena />} />
         <Route path="/admin" element={<DashboardAdmin />} />
         <Route path="/admin/socios" element={<Socios />} />
+        <Route path="/admin/grupo-familiar" element={<GrupoFamiliar />} />
         <Route path="/admin/actividades" element={<Actividades />} />
         <Route path="/admin/planes" element={<Planes />} />
         <Route path="/admin/inscripciones" element={<Inscripciones />} />

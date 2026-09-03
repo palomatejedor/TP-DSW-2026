@@ -1,7 +1,23 @@
 import { useState, useEffect } from 'react'
 import NavBar from '../components/Navbar'
-import { Container, Table, Button, Modal, Form, Badge, Row, Col, Pagination } from 'react-bootstrap'
+import { Container, Table, Button, Modal, Form, Badge, Row, Col, Pagination, Alert } from 'react-bootstrap'
 import { api } from '../api'
+
+function calcularCategoria(fechaNacimiento) {
+  if (!fechaNacimiento) return ''
+  const hoy = new Date()
+  const nacimiento = new Date(fechaNacimiento)
+  let edad = hoy.getFullYear() - nacimiento.getFullYear()
+  const mes = hoy.getMonth() - nacimiento.getMonth()
+  if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) edad--
+
+  if (edad <= 12) return 'Infantil'
+  if (edad <= 17) return 'Adolescente'
+  if (edad <= 64) return 'Adulto'
+  return 'Tercera edad'
+}
+
+const esMenor = (categoria) => categoria === 'Infantil' || categoria === 'Adolescente'
 
 function Socios() {
   const [socios, setSocios] = useState([])
@@ -10,17 +26,20 @@ function Socios() {
   const [socioEditando, setSocioEditando] = useState(null)
   const [socioBaja, setSocioBaja] = useState(null)
   const [fechaBaja, setFechaBaja] = useState('')
-  const [form, setForm] = useState({ dni: '', nombre: '', apellido: '', mail: '', categoria: 'Adulto', estado: 'Activo', fecha_nacimiento: '', fecha_baja: null })
+  const [form, setForm] = useState({ dni: '', nombre: '', apellido: '', mail: '', categoria: '', estado: 'Activo', fecha_nacimiento: '', fecha_baja: null })
   const [errores, setErrores] = useState({})
 
-  // --- Filtros y paginación ---
+  const [showGrupoModal, setShowGrupoModal] = useState(false)
+  const [grupoAfectado, setGrupoAfectado] = useState(null)
+  const [nuevoTitularId, setNuevoTitularId] = useState('')
+  const [errorGrupo, setErrorGrupo] = useState('')
+
   const [filtros, setFiltros] = useState({ nombre: '', apellido: '', dni: '', estado: '', categoria: '' })
   const [page, setPage] = useState(1)
   const [limit] = useState(10)
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
 
-  // Debounce: espera 400ms tras dejar de tipear antes de disparar la búsqueda
   useEffect(() => {
     const timeout = setTimeout(() => {
       setPage(1)
@@ -37,7 +56,6 @@ function Socios() {
 
   const cargarSocios = async (pageActual = page) => {
     const params = { page: pageActual, limit, ...filtros }
-    // saca los filtros vacíos para no mandarlos como query param
     Object.keys(params).forEach(k => { if (params[k] === '') delete params[k] })
     const res = await api.getSocios(params)
     setSocios(res.data)
@@ -63,14 +81,17 @@ function Socios() {
     }
     if (!form.nombre.trim()) e.nombre = 'El nombre es obligatorio'
     if (!form.apellido.trim()) e.apellido = 'El apellido es obligatorio'
-    if (!form.mail.trim()) {
-      e.mail = 'El mail es obligatorio'
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.mail)) {
+
+    const mailObligatorio = !esMenor(form.categoria)
+    if (mailObligatorio && !form.mail.trim()) {
+      e.mail = 'El mail es obligatorio para socios mayores de edad'
+    } else if (form.mail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.mail)) {
       e.mail = 'El formato del mail es inválido'
-    } else {
+    } else if (form.mail.trim()) {
       const mailDuplicado = socios.some(s => s.mail === form.mail && s.id !== socioEditando?.id)
       if (mailDuplicado) e.mail = 'Ya existe un socio con ese mail'
     }
+
     if (!form.fecha_nacimiento) {
       e.fecha_nacimiento = 'La fecha de nacimiento es obligatoria'
     } else {
@@ -80,12 +101,13 @@ function Socios() {
       const edad = hoy.getFullYear() - nacimiento.getFullYear()
       if (edad > 120) e.fecha_nacimiento = 'La fecha de nacimiento no es válida'
     }
+
     return e
   }
 
   const abrirModalNuevo = () => {
     setSocioEditando(null)
-    setForm({ dni: '', nombre: '', apellido: '', mail: '', categoria: 'Adulto', estado: 'Activo', fecha_nacimiento: '', fecha_baja: null })
+    setForm({ dni: '', nombre: '', apellido: '', mail: '', categoria: '', estado: 'Activo', fecha_nacimiento: '', fecha_baja: null })
     setErrores({})
     setShowModal(true)
   }
@@ -97,13 +119,59 @@ function Socios() {
       fecha_nacimiento: socio.fecha_nacimiento ? socio.fecha_nacimiento.toString().split('T')[0] : '',
       fecha_alta: socio.fecha_alta ? socio.fecha_alta.toString().split('T')[0] : '',
       fecha_baja: socio.fecha_baja ? socio.fecha_baja.toString().split('T')[0] : null,
+      mail: socio.mail || '',
     })
     setErrores({})
     setShowModal(true)
   }
 
-  const abrirModalBaja = (socio) => {
+  const abrirModalBaja = async (socio) => {
+    const familia = await api.getFamilia(socio.id)
+    if (!familia.error && familia.titular.id === socio.id && familia.miembros.length > 0) {
+      setGrupoAfectado(familia)
+      setNuevoTitularId('')
+      setErrorGrupo('')
+      setSocioBaja(socio)
+      setShowGrupoModal(true)
+      return
+    }
     setSocioBaja(socio)
+    setFechaBaja(new Date().toISOString().split('T')[0])
+    setShowBajaModal(true)
+  }
+
+  const candidatosNuevoTitular = () => {
+    if (!grupoAfectado) return []
+    return grupoAfectado.miembros.filter(m => m.categoria === 'Adulto' || m.categoria === 'Tercera edad')
+  }
+
+  const continuarConNuevoTitular = async () => {
+    if (!nuevoTitularId) return
+    setErrorGrupo('')
+    const elegidoId = parseInt(nuevoTitularId)
+
+    const r1 = await api.updateSocio(elegidoId, { titular: null })
+    if (r1.error) { setErrorGrupo(r1.error); return }
+
+    for (const m of grupoAfectado.miembros) {
+      if (m.id !== elegidoId) {
+        const r = await api.updateSocio(m.id, { titular: { id: elegidoId } })
+        if (r.error) { setErrorGrupo(`${m.nombre} ${m.apellido}: ${r.error}`); return }
+      }
+    }
+
+    setShowGrupoModal(false)
+    setFechaBaja(new Date().toISOString().split('T')[0])
+    setShowBajaModal(true)
+  }
+
+  const continuarDeshaciendoGrupo = async () => {
+    setErrorGrupo('')
+    for (const m of grupoAfectado.miembros) {
+      const r = await api.updateSocio(m.id, { titular: null })
+      if (r.error) { setErrorGrupo(`${m.nombre} ${m.apellido}: ${r.error}`); return }
+    }
+    setShowGrupoModal(false)
     setFechaBaja(new Date().toISOString().split('T')[0])
     setShowBajaModal(true)
   }
@@ -111,10 +179,14 @@ function Socios() {
   const guardar = async () => {
     const e = validar()
     if (Object.keys(e).length > 0) { setErrores(e); return }
+
+    const payload = { ...form }
+    if (!payload.mail) payload.mail = null
+
     if (socioEditando) {
-      await api.updateSocio(socioEditando.id, form)
+      await api.updateSocio(socioEditando.id, payload)
     } else {
-      await api.createSocio({ ...form, fecha_alta: new Date().toISOString().split('T')[0] })
+      await api.createSocio({ ...payload, fecha_alta: new Date().toISOString().split('T')[0] })
     }
     await cargarSocios(page)
     setShowModal(false)
@@ -122,7 +194,7 @@ function Socios() {
 
   const confirmarBaja = async () => {
     if (!fechaBaja) return
-    await api.updateSocio(socioBaja.id, { ...socioBaja, estado: 'Inactivo', fecha_baja: fechaBaja })
+    await api.updateSocio(socioBaja.id, { estado: 'Inactivo', fecha_baja: fechaBaja })
     await cargarSocios(page)
     setShowBajaModal(false)
   }
@@ -195,9 +267,9 @@ function Socios() {
             <Col md={2}>
               <Form.Select value={filtros.categoria} onChange={e => handleFiltroChange('categoria', e.target.value)}>
                 <option value="">Todas las categorías</option>
-                <option value="Adulto">Adulto</option>
-                <option value="Adolescente">Adolescente</option>
                 <option value="Infantil">Infantil</option>
+                <option value="Adolescente">Adolescente</option>
+                <option value="Adulto">Adulto</option>
                 <option value="Tercera edad">Tercera edad</option>
               </Form.Select>
             </Col>
@@ -214,13 +286,13 @@ function Socios() {
         <Table bordered hover responsive className="shadow-sm">
           <thead className="table-dark">
             <tr>
-              <th>DNI</th><th>Nombre</th><th>Apellido</th><th>Mail</th><th>Categoría</th><th>Plan</th><th>Estado</th><th>Fecha baja</th><th>Acciones</th>
+              <th>DNI</th><th>Nombre</th><th>Apellido</th><th>Mail</th><th>Categoría</th><th>Plan</th><th>Familia</th><th>Estado</th><th>Fecha baja</th><th>Acciones</th>
             </tr>
           </thead>
           <tbody>
             {socios.length === 0 && (
               <tr>
-                <td colSpan={9} className="text-center text-muted py-4">No se encontraron socios</td>
+                <td colSpan={10} className="text-center text-muted py-4">No se encontraron socios</td>
               </tr>
             )}
             {socios.map(s => (
@@ -228,9 +300,14 @@ function Socios() {
                 <td>{s.dni}</td>
                 <td>{s.nombre}</td>
                 <td>{s.apellido}</td>
-                <td>{s.mail}</td>
+                <td>{s.mail || <span className="text-muted">-</span>}</td>
                 <td>{s.categoria}</td>
                 <td>{s.plan ? s.plan.nombre : <span className="text-muted">Sin plan</span>}</td>
+                <td>
+                  {s.titular
+                    ? <Badge bg="info">Miembro de {s.titular.nombre} {s.titular.apellido}</Badge>
+                    : <span className="text-muted">-</span>}
+                </td>
                 <td><Badge bg={s.estado === 'Activo' ? 'success' : 'secondary'}>{s.estado}</Badge></td>
                 <td>{s.fecha_baja ? new Date(s.fecha_baja).toLocaleDateString('es-AR') : '-'}</td>
                 <td>
@@ -270,23 +347,20 @@ function Socios() {
               <Form.Control.Feedback type="invalid">{errores.apellido}</Form.Control.Feedback>
             </Form.Group>
             <Form.Group className="mb-3">
-              <Form.Label>Mail</Form.Label>
+              <Form.Label>
+                Mail {esMenor(form.categoria) && <span className="text-muted small">(opcional para menores de edad)</span>}
+              </Form.Label>
               <Form.Control type="email" value={form.mail} onChange={e => setForm({ ...form, mail: e.target.value })} isInvalid={!!errores.mail} />
               <Form.Control.Feedback type="invalid">{errores.mail}</Form.Control.Feedback>
             </Form.Group>
             <Form.Group className="mb-3">
               <Form.Label>Fecha de nacimiento</Form.Label>
-              <Form.Control type="date" value={form.fecha_nacimiento} onChange={e => setForm({ ...form, fecha_nacimiento: e.target.value })} isInvalid={!!errores.fecha_nacimiento} />
+              <Form.Control type="date" value={form.fecha_nacimiento} onChange={e => setForm(prev => ({ ...prev, fecha_nacimiento: e.target.value, categoria: calcularCategoria(e.target.value) }))} isInvalid={!!errores.fecha_nacimiento} />
               <Form.Control.Feedback type="invalid">{errores.fecha_nacimiento}</Form.Control.Feedback>
             </Form.Group>
             <Form.Group className="mb-3">
-              <Form.Label>Categoría</Form.Label>
-              <Form.Select value={form.categoria} onChange={e => setForm({ ...form, categoria: e.target.value })}>
-                <option>Adulto</option>
-                <option>Adolescente</option>
-                <option>Infantil</option>
-                <option>Tercera edad</option>
-              </Form.Select>
+              <Form.Label>Categoría (calculada automáticamente según la fecha de nacimiento)</Form.Label>
+              <Form.Control value={form.categoria || '—'} disabled readOnly />
             </Form.Group>
             {socioEditando && (
               <Form.Group className="mb-3">
@@ -302,6 +376,58 @@ function Socios() {
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setShowModal(false)}>Cancelar</Button>
           <Button variant="dark" onClick={guardar}>Guardar</Button>
+        </Modal.Footer>
+      </Modal>
+
+      <Modal show={showGrupoModal} onHide={() => setShowGrupoModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Grupo familiar afectado</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {errorGrupo && <Alert variant="danger" className="py-2">{errorGrupo}</Alert>}
+          {grupoAfectado && (
+            <>
+              <Alert variant="warning">
+                <b>{socioBaja?.nombre} {socioBaja?.apellido}</b> es titular de un grupo familiar con {grupoAfectado.miembros.length} integrante{grupoAfectado.miembros.length !== 1 ? 's' : ''}.
+                Antes de dar la baja, elegí qué hacer con el resto del grupo.
+              </Alert>
+
+              {candidatosNuevoTitular().length > 0 ? (
+                <Form.Group className="mb-3">
+                  <Form.Label>Opción 1: asignar un nuevo titular</Form.Label>
+                  <Form.Select value={nuevoTitularId} onChange={e => setNuevoTitularId(e.target.value)}>
+                    <option value="">Elegí quién pasa a ser el nuevo titular...</option>
+                    {candidatosNuevoTitular().map(m => (
+                      <option key={m.id} value={m.id}>{m.nombre} {m.apellido} ({m.categoria})</option>
+                    ))}
+                  </Form.Select>
+                  <Button
+                    variant="dark"
+                    className="w-100 mt-2"
+                    disabled={!nuevoTitularId}
+                    onClick={continuarConNuevoTitular}
+                  >
+                    Confirmar y mantener el grupo
+                  </Button>
+                </Form.Group>
+              ) : (
+                <p className="text-muted small">No hay ningún integrante mayor de edad disponible para ser el nuevo titular.</p>
+              )}
+
+              <hr />
+
+              <p className="mb-2">Opción 2: no asignar un nuevo titular</p>
+              <p className="text-muted small">
+                El grupo familiar se deshace: los {grupoAfectado.miembros.length} integrantes quedan como socios independientes, activos, cada uno con su propio plan.
+              </p>
+              <Button variant="outline-danger" className="w-100" onClick={continuarDeshaciendoGrupo}>
+                Deshacer el grupo y continuar con la baja
+              </Button>
+            </>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowGrupoModal(false)}>Cancelar todo</Button>
         </Modal.Footer>
       </Modal>
 

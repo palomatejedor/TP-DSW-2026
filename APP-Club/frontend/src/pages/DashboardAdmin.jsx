@@ -22,6 +22,15 @@ function DashboardAdmin() {
             </Card>
           </Col>
           <Col md={4}>
+            <Card className="border-0 shadow-sm h-100" style={{ cursor: 'pointer' }} onClick={() => navigate('/admin/grupo-familiar')}>
+              <Card.Body className="text-center p-4">
+                <div style={{ fontSize: '2rem' }}>👨‍👩‍👧‍👦</div>
+                <Card.Title className="mt-2">Grupo Familiar</Card.Title>
+                <Card.Text className="text-muted small">Armar y gestionar grupos familiares</Card.Text>
+              </Card.Body>
+            </Card>
+          </Col>
+          <Col md={4}>
             <Card className="border-0 shadow-sm h-100" style={{ cursor: 'pointer' }} onClick={() => navigate('/admin/actividades')}>
               <Card.Body className="text-center p-4">
                 <div style={{ fontSize: '2rem' }}>🏃</div>
