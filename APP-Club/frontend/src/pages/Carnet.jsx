@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import NavBar from '../components/Navbar'
-import { Container, Card, Badge, Row, Col, Spinner, Carousel } from 'react-bootstrap'
+import { Container, Card, Badge, Row, Col, Spinner, Button } from 'react-bootstrap'
 import { api } from '../api'
 
 function TarjetaCarnet({ socio }) {
@@ -99,6 +99,7 @@ function TarjetaCarnet({ socio }) {
 
 function Carnet() {
   const [personas, setPersonas] = useState([])
+  const [indice, setIndice] = useState(0)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
 
@@ -123,7 +124,6 @@ function Carnet() {
 
       const familia = await api.getFamilia(yo.id)
       if (familia.error) {
-        // No pertenece a ningún grupo familiar armado todavía: solo se muestra a sí mismo
         setPersonas([yo])
       } else {
         setPersonas([familia.titular, ...familia.miembros])
@@ -134,6 +134,9 @@ function Carnet() {
       setCargando(false)
     }
   }
+
+  const anterior = () => setIndice(i => (i === 0 ? personas.length - 1 : i - 1))
+  const siguiente = () => setIndice(i => (i === personas.length - 1 ? 0 : i + 1))
 
   if (cargando) {
     return (
@@ -168,17 +171,42 @@ function Carnet() {
             : 'Tu identificación digital como socio'}
         </p>
 
-        {personas.length === 1 ? (
-          <TarjetaCarnet socio={personas[0]} />
-        ) : (
-          <Carousel indicators controls interval={null} variant="dark">
-            {personas.map(p => (
-              <Carousel.Item key={p.id}>
-                <TarjetaCarnet socio={p} />
-                <p className="text-center text-muted small mt-2">{p.nombre} {p.apellido}</p>
-              </Carousel.Item>
-            ))}
-          </Carousel>
+        <TarjetaCarnet socio={personas[indice]} />
+
+        {personas.length > 1 && (
+          <div className="d-flex align-items-center justify-content-center gap-3 mt-3">
+            <Button variant="outline-dark" size="sm" onClick={anterior} style={{ borderRadius: '50%', width: '36px', height: '36px', padding: 0 }}>
+              ‹
+            </Button>
+
+            <div className="d-flex gap-2">
+              {personas.map((p, i) => (
+                <span
+                  key={p.id}
+                  onClick={() => setIndice(i)}
+                  role="button"
+                  style={{
+                    width: '9px',
+                    height: '9px',
+                    borderRadius: '50%',
+                    background: i === indice ? '#1a1a1a' : '#ccc',
+                    cursor: 'pointer',
+                    transition: 'background 0.2s'
+                  }}
+                />
+              ))}
+            </div>
+
+            <Button variant="outline-dark" size="sm" onClick={siguiente} style={{ borderRadius: '50%', width: '36px', height: '36px', padding: 0 }}>
+              ›
+            </Button>
+          </div>
+        )}
+
+        {personas.length > 1 && (
+          <p className="text-center text-muted small mt-2 mb-0">
+            {personas[indice].nombre} {personas[indice].apellido}
+          </p>
         )}
       </Container>
     </>
