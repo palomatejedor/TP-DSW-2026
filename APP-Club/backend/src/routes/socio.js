@@ -50,6 +50,19 @@ async function validarTitular(titularId, socioIdActual) {
   return null
 }
 
+// Valida que el socio que va a pasar a ser integrante de un grupo no sea, a su vez,
+// titular de su propio grupo con gente a cargo (eso dejaría a esa gente "huérfana").
+async function validarQueNoSeaTitularDeOtroGrupo(socioId) {
+  const socio = await getSocioRepo().findOne({
+    where: { id: socioId },
+    relations: ["miembros"],
+  })
+  if (socio?.miembros?.length > 0) {
+    return "Este socio ya es titular de su propio grupo familiar y no puede pasar a ser integrante de otro. Primero reasigná o disolvé su grupo."
+  }
+  return null
+}
+
 // GET /socios/by-mail/:mail  -> socio del usuario logueado (para paneles del socio)
 router.get("/by-mail/:mail", async (req, res) => {
   try {
@@ -183,6 +196,9 @@ router.put("/:id", async (req, res) => {
     if (body.titular && body.titular.id) {
       const error = await validarTitular(body.titular.id, id)
       if (error) return res.status(400).json({ error })
+
+      const errorPropio = await validarQueNoSeaTitularDeOtroGrupo(id)
+      if (errorPropio) return res.status(400).json({ error: errorPropio })
     }
 
     await getSocioRepo().update(id, body)
