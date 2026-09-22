@@ -95,6 +95,57 @@ router.get("/:id/familia", async (req, res) => {
   }
 })
 
+/**
+ * @openapi
+ * /socios:
+ *   get:
+ *     summary: Obtener listado de socios
+ *     description: Devuelve los socios registrados y permite aplicar filtros.
+ *     tags:
+ *       - Socios
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *         description: Número de página
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Cantidad de socios por página
+ *       - in: query
+ *         name: nombre
+ *         schema:
+ *           type: string
+ *         description: Filtrar por nombre
+ *       - in: query
+ *         name: apellido
+ *         schema:
+ *           type: string
+ *         description: Filtrar por apellido
+ *       - in: query
+ *         name: dni
+ *         schema:
+ *           type: string
+ *         description: Filtrar por DNI
+ *       - in: query
+ *         name: estado
+ *         schema:
+ *           type: string
+ *         description: Filtrar por estado
+ *       - in: query
+ *         name: categoria
+ *         schema:
+ *           type: string
+ *         description: Filtrar por categoría
+ *     responses:
+ *       200:
+ *         description: Lista de socios obtenida correctamente
+ *       500:
+ *         description: Error interno del servidor
+ */
+
 // GET /socios?page=1&limit=10&nombre=juan&apellido=perez&dni=12345678&estado=activo&categoria=Adulto,Tercera edad
 router.get("/", async (req, res) => {
   try {
@@ -154,6 +205,30 @@ router.get("/", async (req, res) => {
     res.status(500).json({ error: err.message })
   }
 })
+
+/**
+ * @openapi
+ * /socios/{id}:
+ *   get:
+ *     summary: Obtener un socio por ID
+ *     description: Devuelve la información de un socio específico.
+ *     tags:
+ *       - Socios
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del socio
+ *     responses:
+ *       200:
+ *         description: Socio encontrado correctamente
+ *       404:
+ *         description: Socio no encontrado
+ *       500:
+ *         description: Error interno del servidor
+ */
 
 router.get("/:id", async (req, res) => {
   try {

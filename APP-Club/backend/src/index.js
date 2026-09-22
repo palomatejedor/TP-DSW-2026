@@ -1,11 +1,18 @@
 const express = require("express")
 const cors = require("cors")
+const swaggerUi = require("swagger-ui-express")
+const swaggerSpec = require("./swagger")
 require("dotenv").config()
 const { AppDataSource } = require("./database")
 
 const app = express()
 app.use(cors())
 app.use(express.json())
+
+
+// documentacion OpenAPI con Swagger UI
+app.use("/api-docs", swaggerUi.serve)
+app.get("/api-docs", swaggerUi.setup(swaggerSpec))
 
 // Rutas
 const socioRoutes = require("./routes/socio")
