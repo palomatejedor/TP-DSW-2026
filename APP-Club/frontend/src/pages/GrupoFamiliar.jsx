@@ -31,8 +31,11 @@ function GrupoFamiliar() {
     setGrupos(Object.values(mapa))
   }
 
+  // ids de todos los que ya son titulares de un grupo (propio o de otro)
+  const idsQueYaSonTitulares = () => new Set(grupos.map(g => g.titular.id))
+
   const titularesCandidatos = () => {
-    const idsConGrupo = new Set(grupos.map(g => g.titular.id))
+    const idsConGrupo = idsQueYaSonTitulares()
     return todos.filter(s =>
       (s.categoria === 'Adulto' || s.categoria === 'Tercera edad') &&
       !s.titular &&
@@ -42,7 +45,12 @@ function GrupoFamiliar() {
 
   const miembrosCandidatos = () => {
     if (!titularId) return []
-    return todos.filter(s => s.id !== parseInt(titularId) && !s.titular)
+    const idsConGrupoPropio = idsQueYaSonTitulares()
+    return todos.filter(s =>
+      s.id !== parseInt(titularId) &&
+      !s.titular &&
+      !idsConGrupoPropio.has(s.id) // un titular de otro grupo no puede sumarse como integrante
+    )
   }
 
   const abrirModalNuevo = () => {
@@ -124,6 +132,21 @@ function GrupoFamiliar() {
     await cargarTodo()
   }
 
+  const eliminarGrupo = async (grupo) => {
+    const confirmar = confirm(
+      `¿Eliminar el grupo familiar de ${grupo.titular.nombre} ${grupo.titular.apellido}? Los ${grupo.miembros.length} integrantes quedarán como socios independientes, activos, cada uno con su propio plan.`
+    )
+    if (!confirmar) return
+
+    for (const m of grupo.miembros) {
+      const resultado = await api.updateSocio(m.id, { titular: null })
+      if (resultado.error) {
+        alert(`${m.nombre} ${m.apellido}: ${resultado.error}`)
+      }
+    }
+    await cargarTodo()
+  }
+
   return (
     <>
       <NavBar rol="admin" />
@@ -166,9 +189,14 @@ function GrupoFamiliar() {
                     </div>
                   ))}
 
-                  <Button size="sm" variant="outline-dark" className="mt-2" onClick={() => abrirModalGestionar(g)}>
-                    Gestionar grupo
-                  </Button>
+                  <div className="d-flex gap-2 mt-2">
+                    <Button size="sm" variant="outline-dark" onClick={() => abrirModalGestionar(g)}>
+                      Gestionar grupo
+                    </Button>
+                    <Button size="sm" variant="outline-danger" onClick={() => eliminarGrupo(g)}>
+                      Eliminar grupo
+                    </Button>
+                  </div>
                 </Card.Body>
               </Card>
             </Col>
@@ -207,7 +235,7 @@ function GrupoFamiliar() {
               </Form.Label>
               <div style={{ maxHeight: '260px', overflowY: 'auto' }} className="border rounded p-2">
                 {miembrosCandidatos().length === 0 && (
-                  <p className="text-muted small mb-0">No hay socios disponibles para agregar (deben no pertenecer ya a otro grupo).</p>
+                  <p className="text-muted small mb-0">No hay socios disponibles para agregar (deben no pertenecer ya a otro grupo, ni ser titulares de uno propio).</p>
                 )}
                 {miembrosCandidatos().map(s => {
                   const coincideApellido = s.apellido?.trim().toLowerCase() === apellidoDelTitular()?.trim().toLowerCase()

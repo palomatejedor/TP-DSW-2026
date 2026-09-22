@@ -1,21 +1,29 @@
 import { useState, useEffect } from 'react'
 import NavBar from '../components/Navbar'
-import { Container, Table, Button, Modal, Form, Badge } from 'react-bootstrap'
+import { Container, Table, Button, Modal, Form, Badge, Row, Col } from 'react-bootstrap'
 import { api } from '../api'
 
 function Inscripciones() {
   const [inscripciones, setInscripciones] = useState([])
+  const [actividades, setActividades] = useState([])
+  const [filtroActividad, setFiltroActividad] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [inscripcionEditando, setInscripcionEditando] = useState(null)
   const [estado, setEstado] = useState('Pendiente')
 
   useEffect(() => {
     cargarInscripciones()
+    cargarActividades()
   }, [])
 
   const cargarInscripciones = async () => {
     const data = await api.getInscripciones()
     setInscripciones(data)
+  }
+
+  const cargarActividades = async () => {
+    const data = await api.getActividades()
+    setActividades(data)
   }
 
   const abrirModalEstado = (ins) => {
@@ -25,7 +33,7 @@ function Inscripciones() {
   }
 
   const guardarEstado = async () => {
-    await api.updateInscripcion(inscripcionEditando.id, { ...inscripcionEditando, estado })
+    await api.updateInscripcion(inscripcionEditando.id, { estado })
     await cargarInscripciones()
     setShowModal(false)
   }
@@ -40,8 +48,14 @@ function Inscripciones() {
   const getBadge = (estado) => {
     if (estado === 'Confirmada') return 'success'
     if (estado === 'Pendiente') return 'warning'
-    return 'secondary'
+    return 'secondary' // Baja
   }
+
+  const inscripcionesFiltradas = filtroActividad
+    ? inscripciones.filter(i => i.actividad?.id === parseInt(filtroActividad))
+    : inscripciones
+
+  const activasFiltradas = inscripcionesFiltradas.filter(i => i.estado !== 'Baja')
 
   return (
     <>
@@ -50,6 +64,24 @@ function Inscripciones() {
         <div className="d-flex justify-content-between align-items-center mb-3">
           <h4 className="fw-bold mb-0">Inscripciones</h4>
         </div>
+
+        <Row className="g-2 mb-3">
+          <Col md={4}>
+            <Form.Select value={filtroActividad} onChange={e => setFiltroActividad(e.target.value)}>
+              <option value="">Todas las actividades</option>
+              {actividades.map(a => (
+                <option key={a.id} value={a.id}>{a.nombre}</option>
+              ))}
+            </Form.Select>
+          </Col>
+        </Row>
+
+        {filtroActividad && (
+          <p className="text-muted small mb-2">
+            {activasFiltradas.length} inscripto{activasFiltradas.length !== 1 ? 's' : ''} activo{activasFiltradas.length !== 1 ? 's' : ''} en esta actividad (sin contar bajas)
+          </p>
+        )}
+
         <Table bordered hover responsive className="shadow-sm">
           <thead className="table-dark">
             <tr>
@@ -57,10 +89,10 @@ function Inscripciones() {
             </tr>
           </thead>
           <tbody>
-            {inscripciones.length === 0 && (
+            {inscripcionesFiltradas.length === 0 && (
               <tr><td colSpan={5} className="text-center text-muted">No hay inscripciones registradas</td></tr>
             )}
-            {inscripciones.map(i => (
+            {inscripcionesFiltradas.map(i => (
               <tr key={i.id}>
                 <td>{i.socio ? `${i.socio.nombre} ${i.socio.apellido}` : '-'}</td>
                 <td>{i.actividad ? i.actividad.nombre : '-'}</td>
@@ -89,8 +121,11 @@ function Inscripciones() {
                 <Form.Select value={estado} onChange={e => setEstado(e.target.value)}>
                   <option>Pendiente</option>
                   <option>Confirmada</option>
-                  <option>Cancelada</option>
+                  <option>Baja</option>
                 </Form.Select>
+                <div className="text-muted small mt-1">
+                  "Baja" libera el cupo de la actividad y deja de contarse como inscripción activa.
+                </div>
               </Form.Group>
             </>
           )}

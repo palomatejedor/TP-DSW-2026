@@ -112,6 +112,10 @@ function Actividades() {
             })}
           </tbody>
         </Table>
+        <p className="text-muted small">
+          <b>Estado:</b> "Activo" significa que la actividad se muestra a los socios y admite inscripciones nuevas.
+          "Inactivo" la oculta del panel de socios (no aparece para inscribirse), pero conserva el historial de quienes ya estaban inscriptos.
+        </p>
       </Container>
 
       <Modal show={showModal} onHide={() => setShowModal(false)}>
@@ -169,6 +173,9 @@ function Actividades() {
                 <option>Activo</option>
                 <option>Inactivo</option>
               </Form.Select>
+              <div className="text-muted small mt-1">
+                Activo: visible para los socios, admite inscripciones. Inactivo: se oculta del panel de socios, pero no se borran las inscripciones existentes.
+              </div>
             </Form.Group>
           </Form>
         </Modal.Body>
