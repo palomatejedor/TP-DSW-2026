@@ -4,10 +4,83 @@
   box-sizing: border-box;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   background: #ffffff;
+  overflow-x: hidden; /* evita scroll horizontal en celular */
 }
 
 #root {
   min-height: 100vh;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* ---------- TABLET (hasta 991px) ---------- */
+@media (max-width: 991.98px) {
+  .container {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .table {
+    font-size: 0.9rem;
+  }
+}
+
+/* ---------- CELULAR (hasta 767px) ---------- */
+@media (max-width: 767.98px) {
+  h1, .h1 { font-size: 1.6rem; }
+  h2, .h2 { font-size: 1.4rem; }
+  h3, .h3 { font-size: 1.2rem; }
+
+  .container {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  /* tablas: texto más chico y sin cortar palabras raro */
+  .table {
+    font-size: 0.8rem;
+  }
+  .table th,
+  .table td {
+    padding: 0.4rem 0.5rem;
+    white-space: nowrap;
+  }
+
+  /* botones de acciones en tablas: más compactos y que bajen de línea */
+  .table td .btn {
+    padding: 0.2rem 0.5rem;
+    font-size: 0.75rem;
+    margin-bottom: 2px;
+  }
+
+  /* botones de cabecera (ej: "Nuevo socio") a ancho completo */
+  .btn-block-mobile {
+    width: 100%;
+  }
+
+  /* modales casi a pantalla completa */
+  .modal-dialog {
+    margin: 0.5rem;
+  }
+
+  /* paginación que no desborde */
+  .pagination {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  /* formularios: inputs cómodos para el dedo */
+  .form-control,
+  .form-select {
+    font-size: 16px; /* evita el zoom automático en iPhone */
+  }
 }
