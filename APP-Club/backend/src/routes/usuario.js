@@ -20,6 +20,16 @@ router.post("/login", async (req, res) => {
     const { mail, contraseña } = req.body
     const usuario = await getUsuarioRepo().findOneBy({ mail, contraseña })
     if (!usuario) return res.status(401).json({ error: "Email o contraseña incorrectos" })
+    // Un socio dado de baja (inactivo) no puede ingresar a la app
+    if (usuario.rol === "socio") {
+      const socio = await getSocioRepo().findOneBy({ mail: usuario.mail })
+      if (socio && socio.estado !== "Activo") {
+        return res.status(403).json({
+          inactivo: true,
+          error: "Socio inactivo: no puede ingresar a la app del club. Comuníquese con el administrador.",
+        })
+      }
+    }
     res.json({ id: usuario.id, nombre: usuario.nombre, apellido: usuario.apellido, mail: usuario.mail, rol: usuario.rol })
   } catch (err) {
     res.status(500).json({ error: err.message })

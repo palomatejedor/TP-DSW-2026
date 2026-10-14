@@ -17,7 +17,7 @@ function Login() {
     try {
       const data = await api.login(email, password)
       if (data.error) {
-        setError('Email o contraseña incorrectos')
+        setError(data.inactivo ? data.error : 'Email o contraseña incorrectos')
       } else {
         localStorage.setItem('usuario', JSON.stringify(data))
         if (data.rol === 'admin') {
