@@ -62,7 +62,10 @@ function Inscripciones() {
       <NavBar rol="admin" />
       <Container className="mt-4">
         <div className="d-flex justify-content-between align-items-center mb-3">
-          <h4 className="fw-bold mb-0">Inscripciones</h4>
+          <div>
+            <h4 className="fw-bold mb-0">Inscripciones a Actividades</h4>
+            <small className="text-muted">Qué socio está inscripto en qué actividad</small>
+          </div>
         </div>
 
         <Row className="g-2 mb-3">
