@@ -1,8 +1,18 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Form, Button, Alert } from 'react-bootstrap'
+import { Form, Alert } from 'react-bootstrap'
 import logo from '../assets/logo.png'
 import { api } from '../api'
+
+const inputStyle = {
+  height: 48,
+  padding: '0 16px',
+  border: '1px solid rgba(255,255,255,0.1)',
+  borderRadius: 12,
+  fontSize: 15,
+  color: '#fff',
+  background: 'rgba(255,255,255,0.04)',
+}
 
 function Login() {
   const [email, setEmail] = useState('')
@@ -32,109 +42,107 @@ function Login() {
   }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '20px'
-    }}>
-      <div style={{ width: '100%', maxWidth: '420px' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexWrap: 'wrap', background: '#080d19' }}>
 
-        <div className="text-center mb-4">
-          <img
-            src={logo}
-            alt="Sports Club"
-            style={{ width: '100px', height: '100px', objectFit: 'contain', margin: '0 auto 16px', display: 'block' }}
-          />
-          <h2 style={{ color: 'white', fontWeight: 'bold', marginBottom: '4px' }}>Sports Club</h2>
-          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem' }}>Sistema de gestión del club</p>
+      {/* Lado izquierdo: marca */}
+      <div style={{
+        flex: '1 1 520px', minHeight: 360, position: 'relative', overflow: 'hidden',
+        display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+        padding: '56px 64px', boxSizing: 'border-box',
+        background: 'radial-gradient(900px 500px at 20% 90%, rgba(91,124,255,0.35), transparent 60%), radial-gradient(600px 400px at 90% 10%, rgba(56,208,232,0.18), transparent 60%), #0a1020'
+      }}>
+        <svg width="100%" height="100%" viewBox="0 0 600 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true" style={{ position: 'absolute', inset: 0, opacity: 0.1 }}>
+          <g fill="none" stroke="#ffffff" strokeWidth="2">
+            <rect x="-40" y="120" width="680" height="560" rx="6" />
+            <line x1="-40" y1="400" x2="640" y2="400" />
+            <circle cx="300" cy="400" r="96" />
+            <rect x="150" y="120" width="300" height="130" />
+            <rect x="150" y="550" width="300" height="130" />
+          </g>
+        </svg>
+
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 14 }}>
+          <img src={logo} alt="Sports Club" style={{ width: 56, height: 56, borderRadius: 14, objectFit: 'contain', background: '#0f1729' }} />
+          <span style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontWeight: 700, fontSize: 22, color: '#fff' }}>Sports Club</span>
         </div>
 
-        <div style={{
-          background: 'rgba(255,255,255,0.05)',
-          backdropFilter: 'blur(10px)',
-          borderRadius: '16px',
-          border: '1px solid rgba(255,255,255,0.1)',
-          padding: '32px'
-        }}>
-          <h5 style={{ color: 'white', marginBottom: '24px', fontWeight: '600' }}>Iniciá sesión</h5>
+        <div style={{ position: 'relative', maxWidth: 460, margin: '40px 0' }}>
+          <h1 style={{ margin: '0 0 16px', fontWeight: 700, fontSize: 'clamp(34px, 5vw, 54px)', lineHeight: 1.05, color: '#fff' }}>
+            Todo tu club, en un solo lugar.
+          </h1>
+          <p style={{ margin: 0, fontSize: 17, lineHeight: 1.55, color: '#8d9ac0' }}>
+            Socios, actividades, planes y beneficios. Desde cualquier dispositivo.
+          </p>
+        </div>
+
+        <div style={{ position: 'relative', fontSize: 13, color: '#566283' }}>© 2026 Sports Club · UTN FRRO</div>
+      </div>
+
+      {/* Lado derecho: formulario */}
+      <div style={{
+        flex: '1 1 480px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '48px 24px', boxSizing: 'border-box', background: '#0b1220'
+      }}>
+        <div style={{ width: '100%', maxWidth: 380 }}>
+          <h2 style={{ margin: '0 0 8px', fontSize: 32, fontWeight: 700, color: '#fff' }}>Iniciá sesión</h2>
+          <p style={{ margin: '0 0 28px', fontSize: 15, color: '#7f8bab' }}>Ingresá con tu mail y contraseña.</p>
 
           {error && <Alert variant="danger" className="py-2" style={{ fontSize: '0.85rem' }}>{error}</Alert>}
 
           <Form onSubmit={handleLogin}>
-            <Form.Group className="mb-3">
-              <Form.Label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem' }}>Email</Form.Label>
+            <Form.Group className="mb-3" controlId="login-mail">
+              <Form.Label>Email</Form.Label>
               <Form.Control
                 type="email"
                 placeholder="tucorreo@email.com"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                style={{
-                  background: 'rgba(255,255,255,0.08)',
-                  border: '1px solid rgba(255,255,255,0.15)',
-                  color: 'white',
-                  borderRadius: '8px'
-                }}
+                style={inputStyle}
               />
             </Form.Group>
 
-            <Form.Group className="mb-4">
-              <Form.Label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem' }}>Contraseña</Form.Label>
+            <Form.Group className="mb-4" controlId="login-pass">
+              <Form.Label>Contraseña</Form.Label>
               <div className="position-relative">
                 <Form.Control
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="••••••••"
+                  placeholder="Tu contraseña"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  style={{
-                    background: 'rgba(255,255,255,0.08)',
-                    border: '1px solid rgba(255,255,255,0.15)',
-                    color: 'white',
-                    borderRadius: '8px',
-                    paddingRight: '40px'
-                  }}
+                  style={{ ...inputStyle, paddingRight: 84 }}
                 />
-                <span
+                <button
+                  type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   style={{
-                    position: 'absolute', right: '12px', top: '50%',
-                    transform: 'translateY(-50%)', cursor: 'pointer',
-                    color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem'
+                    position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
+                    background: 'none', border: 'none', color: '#9db1ff', fontSize: 13, fontWeight: 500, cursor: 'pointer'
                   }}
                 >
-                  {showPassword ? '🙈' : '👁️'}
-                </span>
+                  {showPassword ? 'Ocultar' : 'Mostrar'}
+                </button>
               </div>
             </Form.Group>
 
-            <Button
+            <button
               type="submit"
-              className="w-100"
               style={{
-                background: 'linear-gradient(135deg, #4a9eff, #7c3aed)',
-                border: 'none',
-                borderRadius: '8px',
-                padding: '10px',
-                fontWeight: '600',
-                fontSize: '0.95rem'
+                width: '100%', height: 50, border: 'none', borderRadius: 12,
+                background: 'linear-gradient(135deg, #5b7cff, #3a55e0)', color: '#fff',
+                fontSize: 16, fontWeight: 600, cursor: 'pointer',
+                boxShadow: '0 10px 26px rgba(91,124,255,0.35)'
               }}
             >
               Ingresar
-            </Button>
+            </button>
           </Form>
 
           <div className="text-center mt-3">
-            <Link to="/recuperar-contrasena" style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.8rem', textDecoration: 'none' }}>
+            <Link to="/recuperar-contrasena" style={{ fontSize: 14, fontWeight: 500, textDecoration: 'none' }}>
               ¿Olvidaste tu contraseña?
             </Link>
           </div>
         </div>
-
-        <p className="text-center mt-4" style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.75rem' }}>
-          © 2026 Sports Club · UTN FRRO
-        </p>
       </div>
     </div>
   )
