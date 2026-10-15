@@ -33,6 +33,7 @@ const GRUPOS = {
         { ruta: '/admin/actividades', texto: 'Actividades', icono: 'actividades' },
         { ruta: '/admin/planes', texto: 'Planes', icono: 'planes' },
         { ruta: '/admin/inscripciones', texto: 'Inscripciones', icono: 'inscripciones' },
+        { ruta: '/admin/pagos', texto: 'Pagos', icono: 'cuota' },
         { ruta: '/admin/beneficios', texto: 'Beneficios', icono: 'beneficios' },
       ],
     },

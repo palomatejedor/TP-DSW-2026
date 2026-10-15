@@ -36,6 +36,11 @@ export const api = {
   updateBeneficio: (id, data) => fetch(`${BASE_URL}/beneficios/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then(r => r.json()),
   deleteBeneficio: (id) => fetch(`${BASE_URL}/beneficios/${id}`, { method: "DELETE" }).then(r => r.json()),
 
+  // Pagos / cuotas
+  getPagos: () => fetch(`${BASE_URL}/pagos`).then(r => r.json()),
+  getCuotasSocio: (id) => fetch(`${BASE_URL}/pagos/socio/${id}`).then(r => r.json()),
+  pagarCuota: (id) => fetch(`${BASE_URL}/pagos/${id}/pagar`, { method: "PUT" }).then(r => r.json()),
+
   // Login
   login: (mail, contraseña) => fetch(`${BASE_URL}/usuarios/login`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mail, contraseña }) }).then(r => r.json()),
 

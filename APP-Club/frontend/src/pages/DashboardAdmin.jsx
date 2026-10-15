@@ -10,6 +10,7 @@ const MODULOS = [
   { ruta: '/admin/actividades', titulo: 'Actividades', texto: 'Horarios, cupos y estado.', icono: 'M3 12h4l3-8 4 16 3-8h4' },
   { ruta: '/admin/planes', titulo: 'Planes', texto: 'Planes y cuotas del club.', icono: 'M3 7.5A2.5 2.5 0 0 1 5.5 5h13A2.5 2.5 0 0 1 21 7.5v9a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 16.5zM3 10h18' },
   { ruta: '/admin/inscripciones', titulo: 'Inscripciones', texto: 'Quién está en qué actividad.', icono: 'M9 11.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM3 20c.4-3.4 2.8-5.5 6-5.5s5.6 2.1 6 5.5M16 11l2 2 4-4' },
+  { ruta: '/admin/pagos', titulo: 'Pagos', texto: 'Cuotas cobradas y pendientes.', icono: 'M12 3v18M16.5 7.5c-.8-1.2-2.4-2-4.5-2-2.6 0-4.5 1.2-4.5 3s1.6 2.6 4.5 3 4.5 1.2 4.5 3-1.9 3-4.5 3c-2.1 0-3.7-.8-4.5-2' },
   { ruta: '/admin/beneficios', titulo: 'Beneficios', texto: 'Ventajas para socios activos.', icono: 'M3 8h18v4H3zM5 12v8h14v-8M12 8v12M12 8c-1.5-3-5-3-5-1s3 1 5 1zM12 8c1.5-3 5-3 5-1s-3 1-5 1z' },
 ]
 

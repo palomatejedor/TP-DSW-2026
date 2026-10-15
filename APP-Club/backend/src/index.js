@@ -21,6 +21,7 @@ const planRoutes = require("./routes/plan")
 const inscripcionRoutes = require("./routes/inscripcion")
 const usuarioRoutes = require("./routes/usuario")
 const beneficioRoutes = require("./routes/beneficio")
+const pagoRoutes = require("./routes/pago")
 
 app.use("/socios", socioRoutes)
 app.use("/actividades", actividadRoutes)
@@ -28,6 +29,7 @@ app.use("/planes", planRoutes)
 app.use("/inscripciones", inscripcionRoutes)
 app.use("/usuarios", usuarioRoutes)
 app.use("/beneficios", beneficioRoutes)
+app.use("/pagos", pagoRoutes)
 
 const PORT = process.env.PORT || 3000
 

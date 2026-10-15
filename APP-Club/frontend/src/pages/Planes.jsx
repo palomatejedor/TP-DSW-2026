@@ -8,7 +8,7 @@ function Planes() {
   const [showModal, setShowModal] = useState(false)
   const [planEditando, setPlanEditando] = useState(null)
   const [vistaDetalle, setVistaDetalle] = useState(null)
-  const [form, setForm] = useState({ nombre: '', descripcion: '', precio: '', estado: 'Activo' })
+  const [form, setForm] = useState({ nombre: '', descripcion: '', precio: '', estado: 'Activo', tipo: 'Individual', periodicidad: 'Mensual' })
   const [errores, setErrores] = useState({})
 
   useEffect(() => {
@@ -30,14 +30,14 @@ function Planes() {
 
   const abrirModalNuevo = () => {
     setPlanEditando(null)
-    setForm({ nombre: '', descripcion: '', precio: '', estado: 'Activo' })
+    setForm({ nombre: '', descripcion: '', precio: '', estado: 'Activo', tipo: 'Individual', periodicidad: 'Mensual' })
     setErrores({})
     setShowModal(true)
   }
 
   const abrirModalEditar = (plan) => {
     setPlanEditando(plan)
-    setForm({ ...plan })
+    setForm({ ...plan, tipo: plan.tipo || 'Individual', periodicidad: plan.periodicidad || 'Mensual' })
     setErrores({})
     setShowModal(true)
   }
@@ -70,9 +70,13 @@ function Planes() {
           <Card className="border-0 shadow-sm">
             <Card.Body className="p-4">
               <h4 className="fw-bold">{vistaDetalle.nombre}</h4>
-              <Badge bg={vistaDetalle.estado === 'Activo' ? 'success' : 'secondary'} className="mb-3">{vistaDetalle.estado}</Badge>
+              <div className="d-flex gap-2 mb-3">
+                <Badge bg={vistaDetalle.estado === 'Activo' ? 'success' : 'secondary'}>{vistaDetalle.estado}</Badge>
+                <Badge bg="primary">{vistaDetalle.tipo || 'Individual'}</Badge>
+                <Badge bg="info">{vistaDetalle.periodicidad || 'Mensual'}</Badge>
+              </div>
               <p className="text-muted">{vistaDetalle.descripcion}</p>
-              <h5 className="fw-bold">Precio: ${Number(vistaDetalle.precio).toLocaleString()}/mes</h5>
+              <h5 className="fw-bold">Precio: ${Number(vistaDetalle.precio).toLocaleString()}{vistaDetalle.periodicidad === 'Anual' ? '/año' : '/mes'}</h5>
             </Card.Body>
           </Card>
         </Container>
@@ -97,8 +101,12 @@ function Planes() {
                     <Card.Title className="fw-bold mb-0">{p.nombre}</Card.Title>
                     <Badge bg={p.estado === 'Activo' ? 'success' : 'secondary'}>{p.estado}</Badge>
                   </div>
+                  <div className="d-flex gap-2 mb-2">
+                    <Badge bg="primary">{p.tipo || 'Individual'}</Badge>
+                    <Badge bg="info">{p.periodicidad || 'Mensual'}</Badge>
+                  </div>
                   <Card.Text className="text-muted small">{p.descripcion}</Card.Text>
-                  <h5 className="fw-bold">${Number(p.precio).toLocaleString()}<span className="text-muted fw-normal fs-6">/mes</span></h5>
+                  <h5 className="fw-bold">${Number(p.precio).toLocaleString()}<span className="text-muted fw-normal fs-6">{p.periodicidad === 'Anual' ? '/año' : '/mes'}</span></h5>
                   <div className="d-flex gap-2 mt-3">
                     <Button size="sm" variant="outline-dark" onClick={() => setVistaDetalle(p)}>Ver detalle</Button>
                     <Button size="sm" variant="outline-dark" onClick={() => abrirModalEditar(p)}>Editar</Button>
@@ -131,6 +139,22 @@ function Planes() {
               <Form.Label>Precio</Form.Label>
               <Form.Control type="number" value={form.precio} onChange={e => setForm({ ...form, precio: e.target.value })} isInvalid={!!errores.precio} />
               <Form.Control.Feedback type="invalid">{errores.precio}</Form.Control.Feedback>
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Tipo de plan</Form.Label>
+              <Form.Select value={form.tipo} onChange={e => setForm({ ...form, tipo: e.target.value })}>
+                <option>Individual</option>
+                <option>Familiar</option>
+              </Form.Select>
+              <Form.Text className="text-muted">Los planes familiares solo los puede contratar el titular de un grupo familiar.</Form.Text>
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Periodicidad del pago</Form.Label>
+              <Form.Select value={form.periodicidad} onChange={e => setForm({ ...form, periodicidad: e.target.value })}>
+                <option>Mensual</option>
+                <option>Anual</option>
+              </Form.Select>
+              <Form.Text className="text-muted">El precio es lo que se paga en cada período (por mes o por año).</Form.Text>
             </Form.Group>
             <Form.Group className="mb-3">
               <Form.Label>Estado</Form.Label>

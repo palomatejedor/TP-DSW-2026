@@ -8,6 +8,7 @@ import GrupoFamiliar from './pages/GrupoFamiliar'
 import Actividades from './pages/Actividades'
 import Planes from './pages/Planes'
 import Inscripciones from './pages/Inscripciones'
+import Pagos from './pages/Pagos'
 import ActividadesSocio from './pages/ActividadesSocio'
 import Carnet from './pages/Carnet'
 import Cuota from './pages/Cuota'
@@ -27,6 +28,7 @@ function App() {
         <Route path="/admin/actividades" element={<Actividades />} />
         <Route path="/admin/planes" element={<Planes />} />
         <Route path="/admin/inscripciones" element={<Inscripciones />} />
+        <Route path="/admin/pagos" element={<Pagos />} />
         <Route path="/admin/beneficios" element={<BeneficiosAdmin />} />
         <Route path="/socio" element={<DashboardSocio />} />
         <Route path="/socio/actividades" element={<ActividadesSocio />} />

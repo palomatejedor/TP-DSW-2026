@@ -7,6 +7,7 @@ function PlanesSocio() {
   const [planes, setPlanes] = useState([])
   const [socio, setSocio] = useState(null)
   const [esMiembroNoTitular, setEsMiembroNoTitular] = useState(false)
+  const [esTitular, setEsTitular] = useState(false)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
   const [showModal, setShowModal] = useState(false)
@@ -33,6 +34,14 @@ function PlanesSocio() {
       }
       setSocio(miSocio)
       setEsMiembroNoTitular(!!miSocio.titular)
+
+      // Es titular si tiene un grupo familiar con al menos un integrante
+      let titular = false
+      if (!miSocio.titular) {
+        const familia = await api.getFamilia(miSocio.id)
+        titular = !familia.error && (familia.miembros || []).length > 0
+      }
+      setEsTitular(titular)
 
       const planesData = await api.getPlanes()
       setPlanes(planesData.filter(p => p.estado === 'Activo'))
@@ -97,7 +106,7 @@ function PlanesSocio() {
             <Card.Body className="p-4">
               <div className="text-muted small mb-1">PLAN ACTUAL</div>
               <h5 className="fw-bold">{socio.plan ? socio.plan.nombre : 'Sin plan asignado'}</h5>
-              {socio.plan && <div className="text-muted">${Number(socio.plan.precio).toLocaleString()}/mes</div>}
+              {socio.plan && <div className="text-muted">${Number(socio.plan.precio).toLocaleString()}{socio.plan.periodicidad === 'Anual' ? '/año' : '/mes'}</div>}
             </Card.Body>
           </Card>
         </Container>
@@ -126,6 +135,12 @@ function PlanesSocio() {
           )}
           {planes.map(p => {
             const esActual = socio?.plan?.id === p.id
+            const esFamiliar = p.tipo === 'Familiar'
+            // Familiares: solo titulares de un grupo. Individuales: no para un titular con grupo a cargo.
+            const noDisponible = esFamiliar ? !esTitular : esTitular
+            const motivo = esFamiliar
+              ? 'Requiere ser titular de un grupo familiar'
+              : 'Tu grupo familiar necesita un plan familiar'
             return (
               <Col md={4} key={p.id}>
                 <Card className={`border-0 shadow-sm h-100 ${esActual ? 'border border-success' : ''}`}>
@@ -134,10 +149,19 @@ function PlanesSocio() {
                       <Card.Title className="fw-bold mb-0">{p.nombre}</Card.Title>
                       {esActual && <Badge bg="success">Tu plan</Badge>}
                     </div>
+                    <div className="d-flex gap-2 mb-2">
+                      <Badge bg="primary">{p.tipo || 'Individual'}</Badge>
+                      <Badge bg="info">{p.periodicidad || 'Mensual'}</Badge>
+                    </div>
                     <Card.Text className="text-muted small">{p.descripcion}</Card.Text>
-                    <h5 className="fw-bold mb-3">${Number(p.precio).toLocaleString()}<span className="text-muted fw-normal fs-6">/mes</span></h5>
+                    <h5 className="fw-bold mb-3">${Number(p.precio).toLocaleString()}<span className="text-muted fw-normal fs-6">{p.periodicidad === 'Anual' ? '/año' : '/mes'}</span></h5>
                     {esActual ? (
                       <Button variant="success" disabled className="w-100">✓ Plan actual</Button>
+                    ) : noDisponible ? (
+                      <>
+                        <Button variant="secondary" disabled className="w-100">No disponible</Button>
+                        <div className="text-muted small mt-2 text-center">{motivo}</div>
+                      </>
                     ) : (
                       <Button variant="dark" className="w-100" onClick={() => abrirModal(p)}>
                         Elegir este plan
@@ -157,7 +181,7 @@ function PlanesSocio() {
         </Modal.Header>
         <Modal.Body>
           {planSeleccionado && (
-            <p>¿Confirmás que querés suscribirte a <b>{planSeleccionado.nombre}</b> por ${Number(planSeleccionado.precio).toLocaleString()}/mes?</p>
+            <p>¿Confirmás que querés suscribirte a <b>{planSeleccionado.nombre}</b> por ${Number(planSeleccionado.precio).toLocaleString()}{planSeleccionado.periodicidad === 'Anual' ? '/año' : '/mes'}?</p>
           )}
         </Modal.Body>
         <Modal.Footer>

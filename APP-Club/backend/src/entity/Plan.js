@@ -9,5 +9,9 @@ module.exports = new EntitySchema({
     descripcion: { type: "varchar" },
     estado: { type: "varchar" },
     precio: { type: "int" },
+    // Individual | Familiar (los familiares solo los puede contratar un titular de grupo familiar)
+    tipo: { type: "varchar", default: "Individual" },
+    // Mensual | Anual (define cada cuánto se genera la cuota)
+    periodicidad: { type: "varchar", default: "Mensual" },
   },
 })

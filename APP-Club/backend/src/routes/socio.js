@@ -95,57 +95,6 @@ router.get("/:id/familia", async (req, res) => {
   }
 })
 
-/**
- * @openapi
- * /socios:
- *   get:
- *     summary: Obtener listado de socios
- *     description: Devuelve los socios registrados y permite aplicar filtros.
- *     tags:
- *       - Socios
- *     parameters:
- *       - in: query
- *         name: page
- *         schema:
- *           type: integer
- *         description: Número de página
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *         description: Cantidad de socios por página
- *       - in: query
- *         name: nombre
- *         schema:
- *           type: string
- *         description: Filtrar por nombre
- *       - in: query
- *         name: apellido
- *         schema:
- *           type: string
- *         description: Filtrar por apellido
- *       - in: query
- *         name: dni
- *         schema:
- *           type: string
- *         description: Filtrar por DNI
- *       - in: query
- *         name: estado
- *         schema:
- *           type: string
- *         description: Filtrar por estado
- *       - in: query
- *         name: categoria
- *         schema:
- *           type: string
- *         description: Filtrar por categoría
- *     responses:
- *       200:
- *         description: Lista de socios obtenida correctamente
- *       500:
- *         description: Error interno del servidor
- */
-
 // GET /socios?page=1&limit=10&nombre=juan&apellido=perez&dni=12345678&estado=activo&categoria=Adulto,Tercera edad
 router.get("/", async (req, res) => {
   try {
@@ -206,29 +155,35 @@ router.get("/", async (req, res) => {
   }
 })
 
-/**
- * @openapi
- * /socios/{id}:
- *   get:
- *     summary: Obtener un socio por ID
- *     description: Devuelve la información de un socio específico.
- *     tags:
- *       - Socios
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: ID del socio
- *     responses:
- *       200:
- *         description: Socio encontrado correctamente
- *       404:
- *         description: Socio no encontrado
- *       500:
- *         description: Error interno del servidor
- */
+// Valida que el plan elegido corresponda al socio:
+// - Plan Familiar: solo para el titular de un grupo familiar (con al menos un integrante).
+// - Plan Individual: no para un titular con grupo a cargo (su grupo necesita plan familiar).
+// - Un integrante (no titular) no elige plan: tiene el del titular.
+async function validarPlan(socioId, planId) {
+  const socio = await getSocioRepo().findOne({ where: { id: socioId }, relations: ["miembros", "titular"] })
+  if (!socio) return null
+  if (socio.plan && socio.plan.id === planId) return null // no cambia nada
+
+  const plan = await AppDataSource.getRepository("Plan").findOneBy({ id: planId })
+  if (!plan) return "El plan seleccionado no existe"
+
+  if (socio.titular) {
+    const titular = await getSocioRepo().findOneBy({ id: socio.titular.id })
+    if (!titular?.plan || titular.plan.id !== planId) {
+      return "El plan de un integrante lo define el titular de su grupo familiar"
+    }
+    return null
+  }
+
+  const esTitular = (socio.miembros || []).length > 0
+  if (plan.tipo === "Familiar" && !esTitular) {
+    return "Los planes familiares solo pueden ser contratados por el titular de un grupo familiar"
+  }
+  if (plan.tipo !== "Familiar" && esTitular) {
+    return "Este socio es titular de un grupo familiar: su grupo necesita un plan familiar"
+  }
+  return null
+}
 
 router.get("/:id", async (req, res) => {
   try {
@@ -274,6 +229,11 @@ router.put("/:id", async (req, res) => {
 
       const errorPropio = await validarQueNoSeaTitularDeOtroGrupo(id)
       if (errorPropio) return res.status(400).json({ error: errorPropio })
+    }
+
+    if (body.plan && body.plan.id) {
+      const errorPlan = await validarPlan(id, body.plan.id)
+      if (errorPlan) return res.status(400).json({ error: errorPlan })
     }
 
     await getSocioRepo().update(id, body)
