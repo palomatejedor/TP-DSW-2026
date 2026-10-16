@@ -22,8 +22,18 @@ const hoy = () => {
   return `${h.getFullYear()}-${dosDigitos(h.getMonth() + 1)}-${dosDigitos(h.getDate())}`
 }
 
+// Vence el último día del período: fin de mes (plan mensual) o 31/12 (plan anual)
+const vencimientoDe = (periodo) => {
+  if (!periodo) return null
+  if (periodo.length === 4) return `${periodo}-12-31`
+  const [y, m] = periodo.split("-").map(Number)
+  const ultimo = new Date(y, m, 0).getDate()
+  return `${y}-${dosDigitos(m)}-${dosDigitos(ultimo)}`
+}
+
 // Una cuota pendiente de un mes anterior está vencida
 const formatear = (p) => ({
+  vencimiento: vencimientoDe(p.periodo),
   id: p.id,
   periodo: p.periodo,
   fecha: p.fecha,
@@ -47,6 +57,14 @@ async function asegurarCuotaDelMes(socio) {
     integrantes += await getSocioRepo().count({ where: { titular: { id: socio.id }, estado: "Activo" } })
   }
   const precio = Math.round(Number(socio.plan.precio) || 0) * integrantes
+
+  // Si cambió de plan, se cancela la cuota pendiente del período del plan anterior
+  // (plan anual: la del mes actual; plan mensual: la del año). Las ya pagadas no se tocan.
+  const periodoAnterior = socio.plan.periodicidad === "Anual" ? periodoActual() : anioActual()
+  const obsoletas = await getPagoRepo().find({
+    where: { socio: { id: socio.id }, periodo: periodoAnterior, estado: "Pendiente" },
+  })
+  if (obsoletas.length) await getPagoRepo().remove(obsoletas)
 
   const existente = await getPagoRepo().findOne({ where: { socio: { id: socio.id }, periodo } })
 

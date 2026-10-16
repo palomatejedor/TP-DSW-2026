@@ -113,12 +113,12 @@ function Pagos() {
         <Table bordered hover responsive>
           <thead className="table-dark">
             <tr>
-              <th>Socio</th><th>Período</th><th>Monto</th><th>Estado</th><th>Fecha de pago</th><th>Acciones</th>
+              <th>Socio</th><th>Período</th><th>Vencimiento</th><th>Monto</th><th>Estado</th><th>Fecha de pago</th><th>Acciones</th>
             </tr>
           </thead>
           <tbody>
             {filtrados.length === 0 && (
-              <tr><td colSpan={6} className="text-center text-muted">No hay pagos para mostrar</td></tr>
+              <tr><td colSpan={7} className="text-center text-muted">No hay pagos para mostrar</td></tr>
             )}
             {filtrados.map(p => {
               const est = estadoDe(p)
@@ -126,6 +126,7 @@ function Pagos() {
                 <tr key={p.id}>
                   <td style={{ textTransform: 'capitalize' }}>{p.socio ? `${p.socio.nombre} ${p.socio.apellido}` : '-'}</td>
                   <td>{nombrePeriodo(p.periodo)}</td>
+                  <td>{formatearFecha(p.vencimiento)}</td>
                   <td>${p.monto.toLocaleString('es-AR')}</td>
                   <td><span className={`badge ${CLASE[est]}`}>{est}</span></td>
                   <td>{formatearFecha(p.fecha)}</td>

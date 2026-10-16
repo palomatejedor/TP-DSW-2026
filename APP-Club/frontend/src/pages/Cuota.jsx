@@ -164,6 +164,7 @@ function Cuota() {
             {pendientes.length > 0 && (
               <Alert variant="warning" className="mb-4">
                 Tenés <b>{pendientes.length} cuota{pendientes.length > 1 ? 's' : ''} pendiente{pendientes.length > 1 ? 's' : ''}</b> de pago.
+                {' '}Tu cuota vence el <b>{formatearFecha(pendientes[pendientes.length - 1].vencimiento)}</b>.
               </Alert>
             )}
 
@@ -175,7 +176,9 @@ function Cuota() {
                     <div style={{ flex: '1 1 160px' }}>
                       <div className="fw-bold" style={{ color: '#fff' }}>{nombrePeriodo(c.periodo)}</div>
                       <div className="text-muted small">
-                        {c.fecha ? `Pagada el ${formatearFecha(c.fecha)}` : 'Sin pagar'}
+                        {c.fecha
+                          ? `Pagada el ${formatearFecha(c.fecha)}`
+                          : `${c.vencida ? 'Venció' : 'Vence'} el ${formatearFecha(c.vencimiento)}`}
                       </div>
                     </div>
                     <span className="fw-bold" style={{ color: '#fff' }}>${c.monto.toLocaleString('es-AR')}</span>
