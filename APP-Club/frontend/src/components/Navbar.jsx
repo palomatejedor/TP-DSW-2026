@@ -95,7 +95,7 @@ function NavBar({ rol }) {
   const handleLogout = () => {
     localStorage.removeItem('usuario')
     setAbierto(false)
-    navigate('/')
+    navigate('/', { replace: true })
   }
 
   const nombre = usuario ? `${usuario.nombre || ''} ${usuario.apellido || ''}`.trim() : ''

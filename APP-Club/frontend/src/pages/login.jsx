@@ -31,9 +31,9 @@ function Login() {
       } else {
         localStorage.setItem('usuario', JSON.stringify(data))
         if (data.rol === 'admin') {
-          navigate('/admin')
+          navigate('/admin', { replace: true })
         } else if (data.rol === 'socio') {
-          navigate('/socio')
+          navigate('/socio', { replace: true })
         }
       }
     } catch {

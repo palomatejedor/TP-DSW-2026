@@ -223,6 +223,9 @@ router.put("/:id", async (req, res) => {
       body.categoria = calcularCategoria(body.fecha_nacimiento)
     }
 
+    // Un socio activo no puede tener fecha de baja (al reactivarlo se borra)
+    if (body.estado === "Activo") body.fecha_baja = null
+
     if (body.titular && body.titular.id) {
       const error = await validarTitular(body.titular.id, id)
       if (error) return res.status(400).json({ error })
