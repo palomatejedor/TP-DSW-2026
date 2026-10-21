@@ -19,12 +19,15 @@ function TarjetaCarnet({ socio }) {
 
   const antiguedad = () => {
     if (!socio?.fecha_alta) return '-'
-    const inicio = new Date(socio.fecha_alta)
+    // Se lee la fecha como texto (AAAA-MM-DD) para que la zona horaria no corra el día
+    const [y, m] = String(socio.fecha_alta).slice(0, 10).split('-').map(Number)
+    if (!y || !m) return '-'
     const hoy = new Date()
-    const totalMeses = (hoy.getFullYear() - inicio.getFullYear()) * 12 + (hoy.getMonth() - inicio.getMonth())
-    if (totalMeses < 12) return `${totalMeses} meses`
+    const totalMeses = (hoy.getFullYear() - y) * 12 + (hoy.getMonth() + 1 - m)
+    if (totalMeses <= 0) return 'Menos de 1 mes' // incluye altas de este mes o con fecha futura
+    if (totalMeses < 12) return `${totalMeses} ${totalMeses === 1 ? 'mes' : 'meses'}`
     const anios = Math.floor(totalMeses / 12)
-    return `${anios} año${anios > 1 ? 's' : ''}`
+    return `${anios} ${anios === 1 ? 'año' : 'años'}`
   }
 
   return (
