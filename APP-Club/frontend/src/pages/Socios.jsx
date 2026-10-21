@@ -29,11 +29,13 @@ function Socios() {
   const [form, setForm] = useState({ dni: '', nombre: '', apellido: '', mail: '', categoria: '', estado: 'Activo', fecha_nacimiento: '', fecha_baja: null })
   const [errores, setErrores] = useState({})
 
+  // --- Grupo familiar afectado al dar de baja a un titular ---
   const [showGrupoModal, setShowGrupoModal] = useState(false)
   const [grupoAfectado, setGrupoAfectado] = useState(null)
   const [nuevoTitularId, setNuevoTitularId] = useState('')
   const [errorGrupo, setErrorGrupo] = useState('')
 
+  // --- Filtros y paginación ---
   const [filtros, setFiltros] = useState({ nombre: '', apellido: '', dni: '', estado: '', categoria: '' })
   const [page, setPage] = useState(1)
   const [limit] = useState(10)
@@ -125,6 +127,7 @@ function Socios() {
     setShowModal(true)
   }
 
+  // Si el socio es titular de un grupo con integrantes, primero hay que resolver qué pasa con ellos
   const abrirModalBaja = async (socio) => {
     const familia = await api.getFamilia(socio.id)
     if (!familia.error && familia.titular.id === socio.id && familia.miembros.length > 0) {
@@ -182,6 +185,9 @@ function Socios() {
 
     const payload = { ...form }
     if (!payload.mail) payload.mail = null
+    // Un socio activo no tiene fecha de baja; uno inactivo siempre tiene
+    if (payload.estado === 'Activo') payload.fecha_baja = null
+    else if (payload.estado === 'Inactivo' && !payload.fecha_baja) payload.fecha_baja = new Date().toISOString().split('T')[0]
 
     if (socioEditando) {
       await api.updateSocio(socioEditando.id, payload)
@@ -365,10 +371,31 @@ function Socios() {
             {socioEditando && (
               <Form.Group className="mb-3">
                 <Form.Label>Estado</Form.Label>
-                <Form.Select value={form.estado} onChange={e => setForm({ ...form, estado: e.target.value })}>
+                <Form.Select
+                  value={form.estado}
+                  onChange={e => {
+                    const estado = e.target.value
+                    // Al reactivar se borra la fecha de baja; al dar de baja se propone la de hoy
+                    setForm(prev => ({
+                      ...prev,
+                      estado,
+                      fecha_baja: estado === 'Activo' ? null : (prev.fecha_baja || new Date().toISOString().split('T')[0]),
+                    }))
+                  }}
+                >
                   <option>Activo</option>
                   <option>Inactivo</option>
                 </Form.Select>
+              </Form.Group>
+            )}
+            {socioEditando && form.estado === 'Inactivo' && (
+              <Form.Group className="mb-3">
+                <Form.Label>Fecha de baja</Form.Label>
+                <Form.Control
+                  type="date"
+                  value={form.fecha_baja || ''}
+                  onChange={e => setForm(prev => ({ ...prev, fecha_baja: e.target.value || null }))}
+                />
               </Form.Group>
             )}
           </Form>
@@ -379,6 +406,7 @@ function Socios() {
         </Modal.Footer>
       </Modal>
 
+      {/* Grupo familiar afectado por la baja del titular */}
       <Modal show={showGrupoModal} onHide={() => setShowGrupoModal(false)} centered>
         <Modal.Header closeButton>
           <Modal.Title>Grupo familiar afectado</Modal.Title>
