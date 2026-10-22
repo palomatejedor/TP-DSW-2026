@@ -1,14 +1,18 @@
 import { useState, useEffect } from 'react'
 import NavBar from '../components/Navbar'
 import { Container, Row, Col, Card, Badge, Button, Modal, Alert, Spinner, Form } from 'react-bootstrap'
+import { useNavigate } from 'react-router-dom'
 import { api } from '../api'
 
 function ActividadesSocio() {
+  const navigate = useNavigate()
+  const [planTitular, setPlanTitular] = useState(null) // plan del titular, para los integrantes de un grupo
   const [actividades, setActividades] = useState([])
   const [inscripciones, setInscripciones] = useState([]) // [{ inscripcionId, actividadId, socioId, socioNombre }]
   const [personas, setPersonas] = useState([]) // socios que este usuario puede gestionar (yo, o yo+familia si soy titular)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
+  const [errorAccion, setErrorAccion] = useState('') // error al inscribir (no reemplaza toda la pantalla)
 
   const [showModal, setShowModal] = useState(false)
   const [showBajaModal, setShowBajaModal] = useState(false)
@@ -42,6 +46,7 @@ function ActividadesSocio() {
       if (!familia.error && familia.titular.id === yo.id) {
         listaPersonas = [familia.titular, ...familia.miembros]
       }
+      setPlanTitular(familia.error ? null : (familia.titular?.plan || null))
       setPersonas(listaPersonas)
       await cargarDatos(listaPersonas)
     } catch {
@@ -70,15 +75,45 @@ function ActividadesSocio() {
     )
   }
 
+  // Edad en años cumplidos
+  const edadDe = (fechaNacimiento) => {
+    if (!fechaNacimiento) return null
+    const hoy = new Date()
+    const nac = new Date(fechaNacimiento)
+    let edad = hoy.getFullYear() - nac.getFullYear()
+    const mes = hoy.getMonth() - nac.getMonth()
+    if (mes < 0 || (mes === 0 && hoy.getDate() < nac.getDate())) edad--
+    return edad
+  }
+
+  // ¿La edad de la persona entra en el rango de la actividad?
+  const edadOk = (persona, actividad) => {
+    const edad = edadDe(persona.fecha_nacimiento)
+    if (edad === null) return true
+    const min = actividad.edad_minima || 0
+    return edad >= min && (actividad.edad_maxima == null || edad <= actividad.edad_maxima)
+  }
+
+  const textoEdades = (a) => {
+    const min = a.edad_minima || 0
+    if (a.edad_maxima == null) return min > 0 ? `Desde ${min} años` : 'Todas las edades'
+    return `${min} a ${a.edad_maxima} años`
+  }
+
   const inscriptosEnActividad = (actividadId) => inscripciones.filter(i => i.actividadId === actividadId)
 
-  const personasDisponiblesPara = (actividadId) => {
-    const yaInscriptos = inscriptosEnActividad(actividadId).map(i => i.socioId)
-    return personas.filter(p => !yaInscriptos.includes(p.id))
+  // Para practicar una actividad hace falta un plan (el propio, o el del titular del grupo)
+  const tienePlan = (p) => !!(p.plan || p.titular?.plan || planTitular)
+  const hayAlguienConPlan = personas.some(tienePlan)
+
+  // Quiénes pueden sumarse: tienen plan, la edad corresponde y todavía no están inscriptos
+  const personasDisponiblesPara = (actividad) => {
+    const yaInscriptos = inscriptosEnActividad(actividad.id).map(i => i.socioId)
+    return personas.filter(p => !yaInscriptos.includes(p.id) && tienePlan(p) && edadOk(p, actividad))
   }
 
   const abrirModal = (actividad) => {
-    const disponibles = personasDisponiblesPara(actividad.id)
+    const disponibles = personasDisponiblesPara(actividad)
     setActividadSeleccionada(actividad)
     setPersonaElegidaId(disponibles.length ? String(disponibles[0].id) : '')
     setShowModal(true)
@@ -92,13 +127,18 @@ function ActividadesSocio() {
 
   const confirmarInscripcion = async () => {
     if (!personaElegidaId) return
-    await api.createInscripcion({
+    const resp = await api.createInscripcion({
       fecha: new Date().toISOString().split('T')[0],
       estado: 'Pendiente',
       socio: { id: parseInt(personaElegidaId) },
       actividad: { id: actividadSeleccionada.id }
     })
     setShowModal(false)
+    if (resp.error) {
+      setErrorAccion(resp.error)
+      return
+    }
+    setErrorAccion('')
     const persona = personas.find(p => p.id === parseInt(personaElegidaId))
     setExito(`Inscribiste a ${persona?.nombre} en ${actividadSeleccionada.nombre} correctamente!`)
     setTimeout(() => setExito(''), 4000)
@@ -157,12 +197,24 @@ function ActividadesSocio() {
         </p>
 
         {exito && <Alert variant="success">{exito}</Alert>}
+        {errorAccion && <Alert variant="danger" dismissible onClose={() => setErrorAccion('')}>{errorAccion}</Alert>}
+
+        {!hayAlguienConPlan && (
+          <Alert variant="warning" className="d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <span>
+              {personas.length > 1
+                ? 'Tu grupo familiar todavía no tiene un plan. Para inscribirte a una actividad primero necesitás contratar uno.'
+                : 'Todavía no tenés un plan. Para inscribirte a una actividad primero necesitás contratar uno.'}
+            </span>
+            <Button size="sm" variant="dark" onClick={() => navigate('/socio/planes')}>Ver planes</Button>
+          </Alert>
+        )}
 
         <Row className="g-3">
           {actividades.map(a => {
             const disponible = a.cupo_maximo - (a.cupo_ocupado || 0)
             const inscriptos = inscriptosEnActividad(a.id)
-            const hayDisponiblesParaSumar = personasDisponiblesPara(a.id).length > 0
+            const hayDisponiblesParaSumar = personasDisponiblesPara(a).length > 0
 
             return (
               <Col md={6} key={a.id}>
@@ -176,6 +228,7 @@ function ActividadesSocio() {
                     </div>
                     <Card.Text className="text-muted small mb-3">{a.descripcion}</Card.Text>
                     <div className="small mb-1">📅 <b>Días:</b> {a.dias}</div>
+                    <div className="small mb-1">👤 <b>Edades:</b> {textoEdades(a)}</div>
                     <div className="small mb-3">🕐 <b>Horario:</b> {formatHora(a.horario_desde)} a {formatHora(a.horario_hasta)}</div>
 
                     {inscriptos.length > 0 && (
@@ -191,7 +244,9 @@ function ActividadesSocio() {
                       </div>
                     )}
 
-                    {hayDisponiblesParaSumar ? (
+                    {!hayAlguienConPlan ? (
+                      <Button variant="secondary" disabled className="w-100">Necesitás un plan para inscribirte</Button>
+                    ) : hayDisponiblesParaSumar ? (
                       disponible <= 0 ? (
                         <Button variant="secondary" disabled className="w-100">Sin cupo disponible</Button>
                       ) : (
@@ -200,9 +255,20 @@ function ActividadesSocio() {
                         </Button>
                       )
                     ) : (
-                      <Button variant="success" disabled className="w-100">
-                        {personas.length > 1 ? '✓ Toda la familia inscripta' : '✓ Inscripto'}
-                      </Button>
+                      inscriptos.length > 0 ? (
+                        <Button variant="success" disabled className="w-100">
+                          {personas.length > 1 ? '✓ Ya hay integrantes inscriptos' : '✓ Inscripto'}
+                        </Button>
+                      ) : (
+                        <>
+                          <Button variant="secondary" disabled className="w-100">No disponible para tu edad</Button>
+                          <div className="text-muted small mt-2 text-center">
+                            {personas.length > 1
+                              ? `Ningún integrante de tu grupo tiene la edad para esta actividad (${textoEdades(a)})`
+                              : `Esta actividad es para ${textoEdades(a).toLowerCase()}`}
+                          </div>
+                        </>
+                      )
                     )}
                   </Card.Body>
                 </Card>
@@ -223,7 +289,7 @@ function ActividadesSocio() {
                 <Form.Group className="mb-3">
                   <Form.Label>¿Para quién es la inscripción?</Form.Label>
                   <Form.Select value={personaElegidaId} onChange={e => setPersonaElegidaId(e.target.value)}>
-                    {personasDisponiblesPara(actividadSeleccionada.id).map(p => (
+                    {personasDisponiblesPara(actividadSeleccionada).map(p => (
                       <option key={p.id} value={p.id}>{p.nombre} {p.apellido}</option>
                     ))}
                   </Form.Select>

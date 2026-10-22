@@ -7,7 +7,7 @@ function Actividades() {
   const [actividades, setActividades] = useState([])
   const [showModal, setShowModal] = useState(false)
   const [actividadEditando, setActividadEditando] = useState(null)
-  const [form, setForm] = useState({ nombre: '', descripcion: '', dias: '', horario_desde: '', horario_hasta: '', cupo_maximo: '', estado: 'Activo' })
+  const [form, setForm] = useState({ nombre: '', descripcion: '', dias: '', horario_desde: '', horario_hasta: '', cupo_maximo: '', edad_minima: '', edad_maxima: '', estado: 'Activo' })
   const [errores, setErrores] = useState({})
 
   useEffect(() => {
@@ -30,12 +30,22 @@ function Actividades() {
       e.horario_hasta = 'Debe ser posterior al horario de inicio'
     }
     if (!form.cupo_maximo || isNaN(form.cupo_maximo) || form.cupo_maximo <= 0) e.cupo_maximo = 'El cupo debe ser un número mayor a 0'
+    const tieneMin = form.edad_minima !== '' && form.edad_minima !== null && form.edad_minima !== undefined
+    const tieneMax = form.edad_maxima !== '' && form.edad_maxima !== null && form.edad_maxima !== undefined
+    if (tieneMin && (!/^\d+$/.test(String(form.edad_minima)) || Number(form.edad_minima) > 120)) {
+      e.edad_minima = 'Ingresá una edad entre 0 y 120'
+    }
+    if (tieneMax && (!/^\d+$/.test(String(form.edad_maxima)) || Number(form.edad_maxima) > 120)) {
+      e.edad_maxima = 'Ingresá una edad entre 0 y 120'
+    } else if (tieneMax && Number(form.edad_maxima) < (tieneMin ? Number(form.edad_minima) : 0)) {
+      e.edad_maxima = 'La edad máxima no puede ser menor que la mínima'
+    }
     return e
   }
 
   const abrirModalNuevo = () => {
     setActividadEditando(null)
-    setForm({ nombre: '', descripcion: '', dias: '', horario_desde: '', horario_hasta: '', cupo_maximo: '', estado: 'Activo' })
+    setForm({ nombre: '', descripcion: '', dias: '', horario_desde: '', horario_hasta: '', cupo_maximo: '', edad_minima: '', edad_maxima: '', estado: 'Activo' })
     setErrores({})
     setShowModal(true)
   }
@@ -46,6 +56,8 @@ function Actividades() {
       ...actividad,
       horario_desde: actividad.horario_desde ? actividad.horario_desde.slice(0, 5) : '',
       horario_hasta: actividad.horario_hasta ? actividad.horario_hasta.slice(0, 5) : '',
+      edad_minima: actividad.edad_minima ?? '',
+      edad_maxima: actividad.edad_maxima ?? '',
     })
     setErrores({})
     setShowModal(true)
@@ -54,10 +66,16 @@ function Actividades() {
   const guardar = async () => {
     const e = validar()
     if (Object.keys(e).length > 0) { setErrores(e); return }
+    // Vacío en la mínima = 0 (desde cualquier edad); vacío en la máxima = sin límite
+    const datos = {
+      ...form,
+      edad_minima: form.edad_minima === '' || form.edad_minima === null ? 0 : Number(form.edad_minima),
+      edad_maxima: form.edad_maxima === '' || form.edad_maxima === null ? null : Number(form.edad_maxima),
+    }
     if (actividadEditando) {
-      await api.updateActividad(actividadEditando.id, form)
+      await api.updateActividad(actividadEditando.id, datos)
     } else {
-      await api.createActividad(form)
+      await api.createActividad(datos)
     }
     await cargarActividades()
     setShowModal(false)
@@ -72,6 +90,12 @@ function Actividades() {
 
   const formatHora = (h) => h ? h.slice(0, 5) : '-'
 
+  const formatEdades = (a) => {
+    const min = a.edad_minima || 0
+    if (a.edad_maxima == null) return min > 0 ? `Desde ${min} años` : 'Todas las edades'
+    return `${min} a ${a.edad_maxima} años`
+  }
+
   return (
     <>
       <NavBar rol="admin" />
@@ -83,7 +107,7 @@ function Actividades() {
         <Table bordered hover responsive className="shadow-sm">
           <thead className="table-dark">
             <tr>
-              <th>Nombre</th><th>Descripción</th><th>Días</th><th>Horario</th><th>Cupo máximo</th><th>Inscriptos</th><th>Estado</th><th>Acciones</th>
+              <th>Nombre</th><th>Descripción</th><th>Días</th><th>Horario</th><th>Edades</th><th>Cupo máximo</th><th>Inscriptos</th><th>Estado</th><th>Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -96,6 +120,7 @@ function Actividades() {
                   <td>{a.descripcion}</td>
                   <td>{a.dias}</td>
                   <td>{formatHora(a.horario_desde)} - {formatHora(a.horario_hasta)}</td>
+                  <td>{formatEdades(a)}</td>
                   <td>{a.cupo_maximo}</td>
                   <td>
                     <Badge bg={lleno ? 'danger' : 'secondary'}>
@@ -156,6 +181,35 @@ function Actividades() {
                 />
                 <Form.Control.Feedback type="invalid">{errores.horario_hasta}</Form.Control.Feedback>
               </Form.Group>
+            </div>
+            <div className="d-flex gap-2">
+              <Form.Group className="mb-3 flex-fill">
+                <Form.Label>Edad mínima</Form.Label>
+                <Form.Control
+                  type="number"
+                  min="0"
+                  placeholder="Sin mínimo"
+                  value={form.edad_minima}
+                  onChange={e => setForm({ ...form, edad_minima: e.target.value })}
+                  isInvalid={!!errores.edad_minima}
+                />
+                <Form.Control.Feedback type="invalid">{errores.edad_minima}</Form.Control.Feedback>
+              </Form.Group>
+              <Form.Group className="mb-3 flex-fill">
+                <Form.Label>Edad máxima</Form.Label>
+                <Form.Control
+                  type="number"
+                  min="0"
+                  placeholder="Sin máximo"
+                  value={form.edad_maxima}
+                  onChange={e => setForm({ ...form, edad_maxima: e.target.value })}
+                  isInvalid={!!errores.edad_maxima}
+                />
+                <Form.Control.Feedback type="invalid">{errores.edad_maxima}</Form.Control.Feedback>
+              </Form.Group>
+            </div>
+            <div className="text-muted small mb-3" style={{ marginTop: -8 }}>
+              Edades en años cumplidos. Dejá en blanco lo que no tenga límite (por ejemplo, mini básquet: de 6 a 10).
             </div>
             <Form.Group className="mb-3">
               <Form.Label>Cupo máximo</Form.Label>

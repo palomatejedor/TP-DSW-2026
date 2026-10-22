@@ -6,6 +6,8 @@ import { api } from '../api'
 
 const MODULOS = [
   { ruta: '/admin/socios', titulo: 'Socios', texto: 'Alta, edición, baja y búsqueda de socios.', icono: 'M16 20v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 18.5V20M10 11.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM20 20v-1.5a3.5 3.5 0 0 0-2.5-3.35M15 4.65a3.5 3.5 0 0 1 0 6.7' },
+  { ruta: '/admin/administradores', titulo: 'Administradores', texto: 'Cuentas de administración del club.', icono: 'M12 3l8 3v6c0 4.5-3.2 8.2-8 9-4.8-.8-8-4.5-8-9V6zM9 12l2 2 4-4' },
+  { ruta: '/admin/solicitudes', titulo: 'Solicitudes de cuenta', texto: 'Aprobá las cuentas que piden los socios.', icono: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M22 11h-6' },
   { ruta: '/admin/grupo-familiar', titulo: 'Grupo Familiar', texto: 'Grupos con plan compartido.', icono: 'M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM17 12a2.4 2.4 0 1 0 0-4.8 2.4 2.4 0 0 0 0 4.8zM3.5 19c.4-3 2.6-5 5.5-5s5.1 2 5.5 5M15.5 14.3c2.4-.3 4.4 1.2 5 4' },
   { ruta: '/admin/actividades', titulo: 'Actividades', texto: 'Horarios, cupos y estado.', icono: 'M3 12h4l3-8 4 16 3-8h4' },
   { ruta: '/admin/planes', titulo: 'Planes', texto: 'Planes y cuotas del club.', icono: 'M3 7.5A2.5 2.5 0 0 1 5.5 5h13A2.5 2.5 0 0 1 21 7.5v9a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 16.5zM3 10h18' },
@@ -25,6 +27,7 @@ function saludo() {
 function DashboardAdmin() {
   const navigate = useNavigate()
   const [datos, setDatos] = useState(null)
+  const [sinMail, setSinMail] = useState(0)
 
   let nombre = ''
   try {
@@ -54,6 +57,7 @@ function DashboardAdmin() {
       }
     }
     cargar()
+    api.getSociosSinMail().then(x => setSinMail(Array.isArray(x) ? x.length : 0)).catch(() => {})
   }, [])
 
   const kpis = [
@@ -71,6 +75,20 @@ function DashboardAdmin() {
           <h4 className="fw-bold mb-1">{saludo()}{nombre ? `, ${nombre}` : ''}</h4>
           <p className="text-muted mb-0">Este es el resumen de tu club.</p>
         </div>
+
+        {sinMail > 0 && (
+          <div
+            className="card"
+            style={{ cursor: 'pointer', padding: '14px 20px', marginBottom: '20px', flexDirection: 'row', alignItems: 'center', gap: '14px', borderColor: 'rgba(255,193,7,0.4)' }}
+            onClick={() => navigate('/admin/socios')}
+          >
+            <span style={{ fontSize: 20 }}>⚠️</span>
+            <div style={{ flexGrow: 1, fontSize: 14, color: '#fff' }}>
+              <b>{sinMail}</b> {sinMail === 1 ? 'socio mayor de edad no tiene' : 'socios mayores de edad no tienen'} mail y necesita{sinMail === 1 ? '' : 'n'} uno para crear su cuenta.
+            </div>
+            <span style={{ fontSize: 13, color: '#9db1ff', fontWeight: 600 }}>Ver socios →</span>
+          </div>
+        )}
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '36px' }}>
           {kpis.map(k => (

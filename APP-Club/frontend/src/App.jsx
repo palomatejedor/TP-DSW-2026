@@ -1,5 +1,9 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Login from './pages/Login'
+import Registro from './pages/Registro'
+import Solicitudes from './pages/Solicitudes'
+import Administradores from './pages/Administradores'
+import CambiarContrasena from './pages/CambiarContrasena'
 import RecuperarContrasena from './pages/RecuperarContrasena'
 import DashboardAdmin from './pages/DashboardAdmin'
 import DashboardSocio from './pages/DashboardSocio'
@@ -28,6 +32,8 @@ function leerUsuario() {
 function Protegida({ rol, children }) {
   const usuario = leerUsuario()
   if (!usuario) return <Navigate to="/" replace />
+  // Contraseña temporal: primero tiene que elegir la suya
+  if (usuario.debeCambiarClave) return <Navigate to="/cambiar-contrasena" replace />
   if (usuario.rol !== rol) return <Navigate to={usuario.rol === 'admin' ? '/admin' : '/socio'} replace />
   return children
 }
@@ -44,6 +50,8 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<SoloSinSesion><Login /></SoloSinSesion>} />
+        <Route path="/registro" element={<SoloSinSesion><Registro /></SoloSinSesion>} />
+        <Route path="/cambiar-contrasena" element={<CambiarContrasena />} />
         <Route path="/recuperar-contrasena" element={<RecuperarContrasena />} />
         <Route path="/admin" element={<Protegida rol="admin"><DashboardAdmin /></Protegida>} />
         <Route path="/admin/socios" element={<Protegida rol="admin"><Socios /></Protegida>} />
@@ -51,6 +59,8 @@ function App() {
         <Route path="/admin/actividades" element={<Protegida rol="admin"><Actividades /></Protegida>} />
         <Route path="/admin/planes" element={<Protegida rol="admin"><Planes /></Protegida>} />
         <Route path="/admin/inscripciones" element={<Protegida rol="admin"><Inscripciones /></Protegida>} />
+        <Route path="/admin/administradores" element={<Protegida rol="admin"><Administradores /></Protegida>} />
+        <Route path="/admin/solicitudes" element={<Protegida rol="admin"><Solicitudes /></Protegida>} />
         <Route path="/admin/pagos" element={<Protegida rol="admin"><Pagos /></Protegida>} />
         <Route path="/admin/beneficios" element={<Protegida rol="admin"><BeneficiosAdmin /></Protegida>} />
         <Route path="/socio" element={<Protegida rol="socio"><DashboardSocio /></Protegida>} />

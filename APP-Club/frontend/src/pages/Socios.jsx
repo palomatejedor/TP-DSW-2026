@@ -41,6 +41,7 @@ function Socios() {
   const [limit] = useState(10)
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
+  const [sinMail, setSinMail] = useState([]) // mayores de edad que todavía no tienen mail
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -63,6 +64,7 @@ function Socios() {
     setSocios(res.data)
     setTotalPages(res.pagination.totalPages)
     setTotal(res.pagination.total)
+    api.getSociosSinMail().then(d => setSinMail(Array.isArray(d) ? d : [])).catch(() => {})
   }
 
   const handleFiltroChange = (campo, valor) => {
@@ -84,7 +86,8 @@ function Socios() {
     if (!form.nombre.trim()) e.nombre = 'El nombre es obligatorio'
     if (!form.apellido.trim()) e.apellido = 'El apellido es obligatorio'
 
-    const mailObligatorio = !esMenor(form.categoria)
+    const categoriaReal = form.fecha_nacimiento ? calcularCategoria(form.fecha_nacimiento) : form.categoria
+    const mailObligatorio = !esMenor(categoriaReal)
     if (mailObligatorio && !form.mail.trim()) {
       e.mail = 'El mail es obligatorio para socios mayores de edad'
     } else if (form.mail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.mail)) {
@@ -121,6 +124,8 @@ function Socios() {
       fecha_nacimiento: socio.fecha_nacimiento ? socio.fecha_nacimiento.toString().split('T')[0] : '',
       fecha_alta: socio.fecha_alta ? socio.fecha_alta.toString().split('T')[0] : '',
       fecha_baja: socio.fecha_baja ? socio.fecha_baja.toString().split('T')[0] : null,
+      // La categoría se calcula con la edad de hoy, no con la que quedó guardada
+      categoria: socio.fecha_nacimiento ? calcularCategoria(socio.fecha_nacimiento.toString().split('T')[0]) : socio.categoria,
       mail: socio.mail || '',
     })
     setErrores({})
@@ -239,6 +244,30 @@ function Socios() {
           <h4 className="fw-bold mb-0">Socios</h4>
           <Button variant="dark" onClick={abrirModalNuevo}>+ Nuevo socio</Button>
         </div>
+
+        {sinMail.length > 0 && (
+          <Alert variant="warning" className="mb-3">
+            <div className="fw-bold mb-1">
+              {sinMail.length === 1
+                ? '1 socio es mayor de edad y todavía no tiene mail'
+                : `${sinMail.length} socios son mayores de edad y todavía no tienen mail`}
+            </div>
+            <div className="small mb-2">
+              Necesitan un mail propio para poder crear su cuenta. Cargáselo desde Editar (por ejemplo, un menor que cumplió 18 años).
+            </div>
+            <div className="d-flex flex-column gap-1">
+              {sinMail.map(s => (
+                <div key={s.id} className="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                  <span style={{ textTransform: 'capitalize' }}>
+                    {s.nombre} {s.apellido}
+                    {s.titular && <span className="text-muted small"> · integrante del grupo de {s.titular.nombre} {s.titular.apellido}</span>}
+                  </span>
+                  <Button size="sm" variant="dark" onClick={() => abrirModalEditar(s)}>Cargar mail</Button>
+                </div>
+              ))}
+            </div>
+          </Alert>
+        )}
 
         <div className="bg-light rounded p-3 mb-3">
           <Row className="g-2">

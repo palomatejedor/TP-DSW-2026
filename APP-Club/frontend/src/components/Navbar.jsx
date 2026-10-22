@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { api } from '../api'
 import { useNavigate, useLocation } from 'react-router-dom'
 import logo from '../assets/logo.png'
 
@@ -13,6 +14,7 @@ const ICONOS = {
   carnet: 'M3 7.5A2.5 2.5 0 0 1 5.5 5h13A2.5 2.5 0 0 1 21 7.5v9a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 16.5zM7 10h5M7 14h3',
   cuota: 'M12 3v18M16.5 7.5c-.8-1.2-2.4-2-4.5-2-2.6 0-4.5 1.2-4.5 3s1.6 2.6 4.5 3 4.5 1.2 4.5 3-1.9 3-4.5 3c-2.1 0-3.7-.8-4.5-2',
   salir: 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9',
+  solicitudes: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M22 11h-6',
   menu: 'M4 6h16M4 12h16M4 18h16',
   cerrar: 'M6 6l12 12M18 6L6 18',
 }
@@ -25,6 +27,8 @@ const GRUPOS = {
         { ruta: '/admin', texto: 'Inicio', icono: 'home' },
         { ruta: '/admin/socios', texto: 'Socios', icono: 'socios' },
         { ruta: '/admin/grupo-familiar', texto: 'Grupo Familiar', icono: 'familia' },
+        { ruta: '/admin/solicitudes', texto: 'Solicitudes de cuenta', icono: 'solicitudes' },
+        { ruta: '/admin/administradores', texto: 'Administradores', icono: 'socios' },
       ],
     },
     {
@@ -80,6 +84,15 @@ function NavBar({ rol }) {
   const location = useLocation()
   const [abierto, setAbierto] = useState(false)
   const usuario = leerUsuario()
+  const [pendientes, setPendientes] = useState(0)
+
+  // El administrador ve cuántas solicitudes de cuenta esperan aprobación
+  useEffect(() => {
+    if (rol !== 'admin') return
+    api.getSolicitudes()
+      .then(d => setPendientes(Array.isArray(d) ? d.length : 0))
+      .catch(() => {})
+  }, [rol, location.pathname])
 
   // Le avisa al CSS que esta pantalla tiene barra lateral (deja lugar a la izquierda)
   useEffect(() => {
@@ -148,6 +161,13 @@ function NavBar({ rol }) {
                 >
                   <Icono nombre={it.icono} />
                   {it.texto}
+                  {it.ruta === '/admin/solicitudes' && pendientes > 0 && (
+                    <span style={{
+                      marginLeft: 'auto', minWidth: 22, height: 22, padding: '0 7px', borderRadius: 999,
+                      background: '#5b7cff', color: '#fff', fontSize: 12, fontWeight: 600,
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
+                    }}>{pendientes}</span>
+                  )}
                 </a>
               ))}
             </div>

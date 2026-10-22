@@ -27,7 +27,7 @@ function Login() {
     try {
       const data = await api.login(email, password)
       if (data.error) {
-        setError(data.inactivo ? data.error : 'Email o contraseña incorrectos')
+        setError(data.inactivo || data.pendiente || data.rechazado ? data.error : 'Email o contraseña incorrectos')
       } else {
         localStorage.setItem('usuario', JSON.stringify(data))
         if (data.rol === 'admin') {
@@ -140,6 +140,13 @@ function Login() {
           <div className="text-center mt-3">
             <Link to="/recuperar-contrasena" style={{ fontSize: 14, fontWeight: 500, textDecoration: 'none' }}>
               ¿Olvidaste tu contraseña?
+            </Link>
+          </div>
+
+          <div style={{ marginTop: 28, paddingTop: 22, borderTop: '1px solid rgba(255,255,255,0.08)', textAlign: 'center' }}>
+            <p style={{ margin: '0 0 6px', fontSize: 14, color: '#7f8bab' }}>¿Primera vez en la app?</p>
+            <Link to="/registro" style={{ fontSize: 15, fontWeight: 600, textDecoration: 'none' }}>
+              Registrarme
             </Link>
           </div>
         </div>
