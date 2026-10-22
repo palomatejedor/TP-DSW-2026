@@ -13,6 +13,8 @@ module.exports = new EntitySchema({
     // Activo | Pendiente (esperando aprobación del administrador) | Rechazado
     // Las cuentas que ya existen quedan como Activo.
     estado: { type: "varchar", default: "Activo" },
+    // true cuando la cuenta tiene una contraseña temporal: en el primer ingreso se obliga a cambiarla
+    debe_cambiar_clave: { type: "boolean", default: false },
     // Cuándo el socio pidió su cuenta (solo las creadas con "Registrarme")
     fecha_solicitud: { type: "datetime", nullable: true },
   },

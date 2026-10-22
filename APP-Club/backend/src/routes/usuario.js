@@ -68,7 +68,104 @@ router.post("/login", async (req, res) => {
         })
       }
     }
-    res.json({ id: usuario.id, nombre: usuario.nombre, apellido: usuario.apellido, mail: usuario.mail, rol: usuario.rol })
+    res.json({
+      id: usuario.id,
+      nombre: usuario.nombre,
+      apellido: usuario.apellido,
+      mail: usuario.mail,
+      rol: usuario.rol,
+      debeCambiarClave: !!usuario.debe_cambiar_clave,
+    })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// POST /usuarios/cambiar-contrasena
+// body: { id, actual, nueva }  -> el usuario elige su propia contraseña
+router.post("/cambiar-contrasena", async (req, res) => {
+  try {
+    const { id, actual, nueva } = req.body
+    if (!id || !actual || !nueva) return res.status(400).json({ error: "Completá todos los campos" })
+    if (String(nueva).length < 6) return res.status(400).json({ error: "La contraseña nueva debe tener al menos 6 caracteres" })
+    if (actual === nueva) return res.status(400).json({ error: "La contraseña nueva debe ser distinta de la actual" })
+
+    const usuario = await getUsuarioRepo().findOneBy({ id: parseInt(id) })
+    if (!usuario) return res.status(404).json({ error: "Usuario no encontrado" })
+
+    const coincide = esHash(usuario.contraseña)
+      ? await bcrypt.compare(actual, usuario.contraseña)
+      : usuario.contraseña === actual
+    if (!coincide) return res.status(400).json({ error: "La contraseña actual es incorrecta" })
+
+    usuario.contraseña = await encriptar(String(nueva))
+    usuario.debe_cambiar_clave = false
+    await getUsuarioRepo().save(usuario)
+    res.json({ ok: true })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// ---- Administradores (los crea y elimina otro administrador) ----
+
+// GET /usuarios/admins
+router.get("/admins", async (req, res) => {
+  try {
+    const admins = await getUsuarioRepo().find({ where: { rol: "admin" }, order: { apellido: "ASC", nombre: "ASC" } })
+    res.json(admins.map(a => ({
+      id: a.id, nombre: a.nombre, apellido: a.apellido, mail: a.mail, estado: a.estado,
+      debe_cambiar_clave: !!a.debe_cambiar_clave,
+    })))
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// POST /usuarios/admins   body: { nombre, apellido, mail, contraseña (temporal) }
+router.post("/admins", async (req, res) => {
+  try {
+    const nombre = (req.body.nombre || "").trim()
+    const apellido = (req.body.apellido || "").trim()
+    const mail = (req.body.mail || "").trim().toLowerCase()
+    const contraseña = req.body.contraseña || ""
+
+    if (!nombre || !apellido || !mail || !contraseña) return res.status(400).json({ error: "Completá todos los campos" })
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) return res.status(400).json({ error: "El formato del mail es inválido" })
+    if (String(contraseña).length < 6) return res.status(400).json({ error: "La contraseña temporal debe tener al menos 6 caracteres" })
+
+    const existente = await getUsuarioRepo().findOneBy({ mail })
+    if (existente) return res.status(400).json({ error: "Ya existe una cuenta con ese mail" })
+
+    const admin = getUsuarioRepo().create({
+      nombre, apellido, mail,
+      contraseña: await encriptar(String(contraseña)),
+      rol: "admin",
+      estado: "Activo",
+      debe_cambiar_clave: true,
+    })
+    await getUsuarioRepo().save(admin)
+    res.status(201).json({ ok: true })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// DELETE /usuarios/admins/:id?solicitante=ID  (nadie puede eliminar su propia cuenta)
+router.delete("/admins/:id", async (req, res) => {
+  try {
+    const id = parseInt(req.params.id)
+    const solicitante = parseInt(req.query.solicitante)
+    if (id === solicitante) return res.status(400).json({ error: "No podés eliminar tu propia cuenta" })
+
+    const admin = await getUsuarioRepo().findOneBy({ id })
+    if (!admin || admin.rol !== "admin") return res.status(404).json({ error: "Administrador no encontrado" })
+
+    const cantidad = await getUsuarioRepo().countBy({ rol: "admin" })
+    if (cantidad <= 1) return res.status(400).json({ error: "Tiene que quedar al menos un administrador" })
+
+    await getUsuarioRepo().delete(id)
+    res.json({ ok: true })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
