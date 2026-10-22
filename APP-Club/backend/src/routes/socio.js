@@ -63,6 +63,52 @@ async function validarQueNoSeaTitularDeOtroGrupo(socioId) {
   return null
 }
 
+// Recalcula la categoría de todos los socios según su edad de hoy.
+// Se ejecuta como máximo una vez por hora, así quien cumple años pasa solo de categoría.
+let ultimaActualizacionCategorias = 0
+async function actualizarCategorias() {
+  const ahora = Date.now()
+  if (ahora - ultimaActualizacionCategorias < 60 * 60 * 1000) return
+  ultimaActualizacionCategorias = ahora
+
+  const socios = await getSocioRepo()
+    .createQueryBuilder("socio")
+    .select(["socio.id", "socio.fecha_nacimiento", "socio.categoria"])
+    .getMany()
+
+  for (const s of socios) {
+    if (!s.fecha_nacimiento) continue
+    const nueva = calcularCategoria(s.fecha_nacimiento)
+    if (nueva !== s.categoria) await getSocioRepo().update(s.id, { categoria: nueva })
+  }
+}
+
+// Ya hay otro socio con ese mail
+async function mailEnUso(mail, idActual) {
+  if (!mail) return false
+  const otro = await getSocioRepo().findOneBy({ mail })
+  return !!otro && otro.id !== idActual
+}
+
+// GET /socios/sin-mail -> socios mayores de edad activos que todavía no tienen mail
+// (por ejemplo, un menor que cumplió 18): necesitan uno propio para poder crear su cuenta
+router.get("/sin-mail", async (req, res) => {
+  try {
+    await actualizarCategorias()
+    const socios = await getSocioRepo()
+      .createQueryBuilder("socio")
+      .leftJoinAndSelect("socio.plan", "plan")
+      .leftJoinAndSelect("socio.titular", "titular")
+      .where("socio.estado = :estado", { estado: "Activo" })
+      .andWhere("socio.categoria IN (:...cats)", { cats: ["Adulto", "Tercera edad"] })
+      .andWhere("(socio.mail IS NULL OR socio.mail = '')")
+      .getMany()
+    res.json(socios)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 // GET /socios/by-mail/:mail  -> socio del usuario logueado (para paneles del socio)
 router.get("/by-mail/:mail", async (req, res) => {
   try {
@@ -98,6 +144,7 @@ router.get("/:id/familia", async (req, res) => {
 // GET /socios?page=1&limit=10&nombre=juan&apellido=perez&dni=12345678&estado=activo&categoria=Adulto,Tercera edad
 router.get("/", async (req, res) => {
   try {
+    await actualizarCategorias()
     const {
       page = 1,
       limit = 10,
@@ -202,6 +249,10 @@ router.post("/", async (req, res) => {
       body.categoria = calcularCategoria(body.fecha_nacimiento)
     }
 
+    if (await mailEnUso(body.mail, null)) {
+      return res.status(400).json({ error: "Ya existe un socio con ese mail" })
+    }
+
     if (body.titular && body.titular.id) {
       const error = await validarTitular(body.titular.id, null)
       if (error) return res.status(400).json({ error })
@@ -221,6 +272,10 @@ router.put("/:id", async (req, res) => {
     const body = { ...req.body }
     if (body.fecha_nacimiento) {
       body.categoria = calcularCategoria(body.fecha_nacimiento)
+    }
+
+    if (await mailEnUso(body.mail, id)) {
+      return res.status(400).json({ error: "Ya existe un socio con ese mail" })
     }
 
     // Un socio activo no puede tener fecha de baja (al reactivarlo se borra)
