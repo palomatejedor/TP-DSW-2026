@@ -11,6 +11,10 @@ module.exports = new EntitySchema({
     horario_desde: { type: "time" },
     horario_hasta: { type: "time" },
     cupo_maximo: { type: "int" },
+    // Rango de edades (en años cumplidos). Sin edad máxima = sin límite superior.
+    // Las actividades que ya existían quedan para todas las edades.
+    edad_minima: { type: "int", default: 0 },
+    edad_maxima: { type: "int", nullable: true },
     estado: { type: "varchar" },
   },
   relations: {

@@ -25,6 +25,22 @@ router.get("/:id", async (req, res) => {
   }
 })
 
+// Edad en años cumplidos a partir de la fecha de nacimiento
+function edadDe(fechaNacimiento) {
+  const hoy = new Date()
+  const nacimiento = new Date(fechaNacimiento)
+  let edad = hoy.getFullYear() - nacimiento.getFullYear()
+  const mes = hoy.getMonth() - nacimiento.getMonth()
+  if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) edad--
+  return edad
+}
+
+function textoRangoEdades(a) {
+  const min = a.edad_minima || 0
+  if (a.edad_maxima == null) return min > 0 ? `desde ${min} años` : "todas las edades"
+  return `de ${min} a ${a.edad_maxima} años`
+}
+
 // Reglas para inscribirse a una actividad. Devuelve el mensaje de error, o null si está todo bien.
 async function validarInscripcion(socioId, actividadId) {
   const socio = await getSocioRepo().findOne({ where: { id: socioId }, relations: ["titular"] })
@@ -42,6 +58,15 @@ async function validarInscripcion(socioId, actividadId) {
   const actividad = await getActividadRepo().findOneBy({ id: actividadId })
   if (!actividad) return "La actividad no existe"
   if (actividad.estado !== "Activo") return "La actividad no está disponible"
+
+  // La edad del socio tiene que estar dentro del rango de la actividad
+  if (socio.fecha_nacimiento) {
+    const edad = edadDe(socio.fecha_nacimiento)
+    const min = actividad.edad_minima || 0
+    if (edad < min || (actividad.edad_maxima != null && edad > actividad.edad_maxima)) {
+      return `Esta actividad es para personas ${textoRangoEdades(actividad)}`
+    }
+  }
 
   const inscripciones = await getInscripcionRepo().find({
     where: { actividad: { id: actividadId } },
