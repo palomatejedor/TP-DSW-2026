@@ -10,6 +10,11 @@ module.exports = new EntitySchema({
     mail: { type: "varchar", unique: true },
     contraseña: { type: "varchar" },
     rol: { type: "varchar" },
+    // Activo | Pendiente (esperando aprobación del administrador) | Rechazado
+    // Las cuentas que ya existen quedan como Activo.
+    estado: { type: "varchar", default: "Activo" },
+    // Cuándo el socio pidió su cuenta (solo las creadas con "Registrarme")
+    fecha_solicitud: { type: "datetime", nullable: true },
   },
   relations: {
     socio: {
