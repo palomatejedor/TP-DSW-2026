@@ -19,13 +19,21 @@ import Cuota from './pages/Cuota'
 import Beneficios from './pages/Beneficios'
 import BeneficiosAdmin from './pages/BeneficiosAdmin'
 import PlanesSocio from './pages/PlanesSocio'
+import { sesionVencida, cerrarPorVencimiento } from './sesion'
 
 function leerUsuario() {
+  let usuario
   try {
-    return JSON.parse(localStorage.getItem('usuario') || 'null')
+    usuario = JSON.parse(localStorage.getItem('usuario') || 'null')
   } catch {
     return null
   }
+  // Pasó la hora de sesión del socio: se cierra y el login avisa
+  if (usuario && sesionVencida(usuario)) {
+    cerrarPorVencimiento()
+    return null
+  }
+  return usuario
 }
 
 // Solo deja pasar si hay sesión y el rol corresponde; si no, vuelve al login

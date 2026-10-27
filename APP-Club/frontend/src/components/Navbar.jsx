@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { api } from '../api'
 import { useNavigate, useLocation } from 'react-router-dom'
 import logo from '../assets/logo.png'
+import { tiempoRestante, cerrarPorVencimiento } from '../sesion'
 
 const ICONOS = {
   home: 'M3 11l9-8 9 8M5 10v10h14V10',
@@ -93,6 +94,17 @@ function NavBar({ rol }) {
       .then(d => setPendientes(Array.isArray(d) ? d.length : 0))
       .catch(() => {})
   }, [rol, location.pathname])
+
+  // Cuando se cumple la hora de sesión del socio, la cierra aunque siga en la misma pantalla
+  useEffect(() => {
+    const restante = tiempoRestante(leerUsuario())
+    if (restante === Infinity) return
+    const timer = setTimeout(() => {
+      cerrarPorVencimiento()
+      navigate('/', { replace: true })
+    }, Math.max(restante, 0))
+    return () => clearTimeout(timer)
+  }, [navigate])
 
   // Le avisa al CSS que esta pantalla tiene barra lateral (deja lugar a la izquierda)
   useEffect(() => {

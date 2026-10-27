@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { Form, Alert } from 'react-bootstrap'
 import logo from '../assets/logo.png'
@@ -19,7 +19,13 @@ function Login() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [expirada] = useState(() => localStorage.getItem('sesionExpirada') === '1')
   const navigate = useNavigate()
+
+  // El aviso de sesión expirada se muestra una sola vez
+  useEffect(() => {
+    localStorage.removeItem('sesionExpirada')
+  }, [])
 
   const handleLogin = async (e) => {
     e.preventDefault()
@@ -29,7 +35,7 @@ function Login() {
       if (data.error) {
         setError(data.inactivo || data.pendiente || data.rechazado ? data.error : 'Email o contraseña incorrectos')
       } else {
-        localStorage.setItem('usuario', JSON.stringify(data))
+        localStorage.setItem('usuario', JSON.stringify({ ...data, inicioSesion: Date.now() }))
         if (data.rol === 'admin') {
           navigate('/admin', { replace: true })
         } else if (data.rol === 'socio') {
@@ -87,6 +93,11 @@ function Login() {
           <h2 style={{ margin: '0 0 8px', fontSize: 32, fontWeight: 700, color: '#fff' }}>Iniciá sesión</h2>
           <p style={{ margin: '0 0 28px', fontSize: 15, color: '#7f8bab' }}>Ingresá con tu mail y contraseña.</p>
 
+          {expirada && !error && (
+            <Alert variant="warning" className="py-2" style={{ fontSize: '0.85rem' }}>
+              El tiempo límite de sesión ha expirado. Volvé a iniciar sesión.
+            </Alert>
+          )}
           {error && <Alert variant="danger" className="py-2" style={{ fontSize: '0.85rem' }}>{error}</Alert>}
 
           <Form onSubmit={handleLogin}>
