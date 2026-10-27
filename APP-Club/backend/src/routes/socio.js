@@ -63,6 +63,25 @@ async function validarQueNoSeaTitularDeOtroGrupo(socioId) {
   return null
 }
 
+// Valida el plan de un socio que se está dando de alta (todavía no tiene id ni integrantes).
+async function validarPlanNuevo(planId, titularId) {
+  const plan = await AppDataSource.getRepository("Plan").findOneBy({ id: planId })
+  if (!plan) return "El plan seleccionado no existe"
+
+  if (titularId) {
+    const titular = await getSocioRepo().findOneBy({ id: titularId })
+    if (!titular?.plan || titular.plan.id !== planId) {
+      return "El plan de un integrante lo define el titular de su grupo familiar"
+    }
+    return null
+  }
+
+  if (plan.tipo === "Familiar") {
+    return "Los planes familiares solo pueden ser contratados por el titular de un grupo familiar"
+  }
+  return null
+}
+
 // Cuando un socio pasa a integrar un grupo familiar, toma el plan del titular
 // y se descartan sus cuotas pendientes propias (la cuota del grupo la paga el titular).
 async function heredarPlanDelTitular(socioId) {
@@ -271,6 +290,11 @@ router.post("/", async (req, res) => {
     if (body.titular && body.titular.id) {
       const error = await validarTitular(body.titular.id, null)
       if (error) return res.status(400).json({ error })
+    }
+
+    if (body.plan && body.plan.id) {
+      const errorPlan = await validarPlanNuevo(body.plan.id, body.titular && body.titular.id)
+      if (errorPlan) return res.status(400).json({ error: errorPlan })
     }
 
     const socio = getSocioRepo().create(body)
