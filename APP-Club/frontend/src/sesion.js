@@ -1,5 +1,5 @@
 // La sesión del socio dura una hora desde que inicia sesión
-export const DURACION_SESION_SOCIO = 60 * 60 * 1000
+export const DURACION_SESION_SOCIO = 15 * 60 * 1000
 
 // Milisegundos que le quedan a la sesión del socio (los admins no vencen)
 export function tiempoRestante(usuario) {
