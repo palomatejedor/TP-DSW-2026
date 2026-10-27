@@ -1,23 +1,62 @@
+import { useState, useEffect } from 'react'
 import NavBar from '../components/Navbar'
-import { Container, Row, Col, Card, Badge } from 'react-bootstrap'
-
-const beneficiosMock = [
-  { id: 1, nombre: 'Descuento en indumentaria', descripcion: '20% de descuento en la tienda oficial del club en compras de ropa y accesorios deportivos.', estado: 'Activo' },
-  { id: 2, nombre: 'Clases de natación gratis', descripcion: 'Los socios activos tienen acceso gratuito a 2 clases de natación por mes.', estado: 'Activo' },
-  { id: 3, nombre: 'Estacionamiento gratuito', descripcion: 'Acceso sin costo al estacionamiento del club en días de partido o evento.', estado: 'Activo' },
-  { id: 4, nombre: 'Invitados con descuento', descripcion: 'Podés traer hasta 2 invitados por mes con 50% de descuento en la entrada.', estado: 'Activo' },
-  { id: 5, nombre: 'Acceso anticipado a eventos', descripcion: 'Los socios tienen prioridad para comprar entradas a eventos y torneos del club.', estado: 'Inactivo' },
-]
+import { Container, Row, Col, Card, Badge, Spinner, Alert } from 'react-bootstrap'
+import { api } from '../api'
 
 function Beneficios() {
+  const [beneficios, setBeneficios] = useState([])
+  const [cargando, setCargando] = useState(true)
+  const [error, setError] = useState('')
+  const [socioActivo, setSocioActivo] = useState(true)
+
+  useEffect(() => {
+    const cargar = async () => {
+      try {
+        const usuario = JSON.parse(localStorage.getItem('usuario') || 'null')
+        if (usuario?.mail) {
+          const socio = await api.getSocioByMail(usuario.mail)
+          if (socio && !socio.error && socio.estado !== 'Activo') {
+            setSocioActivo(false)
+            setCargando(false)
+            return
+          }
+        }
+        const data = await api.getBeneficios()
+        if (!Array.isArray(data)) throw new Error()
+        setBeneficios(data)
+      } catch {
+        setError('No se pudieron cargar los beneficios')
+      } finally {
+        setCargando(false)
+      }
+    }
+    cargar()
+  }, [])
+
+  const activos = beneficios.filter(b => b.estado === 'Activo')
+
   return (
     <>
       <NavBar rol="socio" />
       <Container className="mt-4">
         <h4 className="fw-bold mb-1">Beneficios disponibles</h4>
         <p className="text-muted mb-4">Estos son los beneficios exclusivos para socios activos</p>
+
+        {!cargando && !socioActivo && (
+          <Alert variant="warning">
+            <Alert.Heading className="h6 fw-bold">Tu membresía no está activa</Alert.Heading>
+            Los beneficios están disponibles solo para socios activos. Comunicate con el club para regularizar tu situación.
+          </Alert>
+        )}
+
+        {cargando && <div className="text-center my-4"><Spinner animation="border" /></div>}
+        {error && <p className="text-danger">{error}</p>}
+        {!cargando && !error && socioActivo && activos.length === 0 && (
+          <p className="text-muted">Por el momento no hay beneficios disponibles.</p>
+        )}
+
         <Row className="g-3">
-          {beneficiosMock.filter(b => b.estado === 'Activo').map(b => (
+          {socioActivo && activos.map(b => (
             <Col md={6} key={b.id}>
               <Card className="border-0 shadow-sm h-100">
                 <Card.Body className="p-4">
