@@ -63,6 +63,21 @@ async function validarQueNoSeaTitularDeOtroGrupo(socioId) {
   return null
 }
 
+// Cuando un socio pasa a integrar un grupo familiar, toma el plan del titular
+// y se descartan sus cuotas pendientes propias (la cuota del grupo la paga el titular).
+async function heredarPlanDelTitular(socioId) {
+  const socio = await getSocioRepo().findOne({ where: { id: socioId }, relations: ["titular"] })
+  if (!socio || !socio.titular) return
+  const titular = await getSocioRepo().findOneBy({ id: socio.titular.id })
+  if (!titular || !titular.plan) return
+  if (!socio.plan || socio.plan.id !== titular.plan.id) {
+    await getSocioRepo().update(socioId, { plan: titular.plan })
+  }
+  const pagoRepo = AppDataSource.getRepository("Pago")
+  const pendientes = await pagoRepo.find({ where: { socio: { id: socioId }, estado: "Pendiente" } })
+  if (pendientes.length) await pagoRepo.remove(pendientes)
+}
+
 // Recalcula la categoría de todos los socios según su edad de hoy.
 // Se ejecuta como máximo una vez por hora, así quien cumple años pasa solo de categoría.
 let ultimaActualizacionCategorias = 0
@@ -260,6 +275,7 @@ router.post("/", async (req, res) => {
 
     const socio = getSocioRepo().create(body)
     const result = await getSocioRepo().save(socio)
+    if (body.titular && body.titular.id) await heredarPlanDelTitular(result.id)
     res.status(201).json(result)
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -306,6 +322,9 @@ router.put("/:id", async (req, res) => {
         }
       }
     }
+
+    // Si lo sumaron a un grupo familiar, pasa al plan del titular
+    if (body.titular && body.titular.id) await heredarPlanDelTitular(id)
 
     const socio = await getSocioRepo().findOne({ where: { id }, relations: ["titular"] })
     res.json(socio)
