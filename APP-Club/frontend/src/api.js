@@ -1,66 +1,84 @@
 const BASE_URL = "http://localhost:3000"
 
+// Todos los pedidos pasan por acá: se agrega el token de la sesión y,
+// si el servidor dice que la sesión no existe o venció, se vuelve al login.
+const pedir = (ruta, opciones = {}) => {
+  let token = null
+  try { token = JSON.parse(localStorage.getItem("usuario") || "null")?.token } catch { /* sin sesión */ }
+  const headers = { ...(opciones.headers || {}) }
+  if (token) headers.Authorization = `Bearer ${token}`
+  return fetch(`${BASE_URL}${ruta}`, { ...opciones, headers }).then(async (r) => {
+    const data = await r.json()
+    if (r.status === 401 && ruta !== "/usuarios/login") {
+      localStorage.removeItem("usuario")
+      localStorage.setItem("sesionExpirada", "1")
+      window.location.href = "/"
+    }
+    return data
+  })
+}
+
 export const api = {
   // Socios
   getSocios: (params = {}) => {
     const query = new URLSearchParams(params).toString()
-    return fetch(`${BASE_URL}/socios?${query}`).then(r => r.json())
+    return pedir(`/socios?${query}`)
   },
-  getSociosSinMail: () => fetch(`${BASE_URL}/socios/sin-mail`).then(r => r.json()),
-  getSocioByMail: (mail) => fetch(`${BASE_URL}/socios/by-mail/${encodeURIComponent(mail)}`).then(r => r.json()),
-  getFamilia: (id) => fetch(`${BASE_URL}/socios/${id}/familia`).then(r => r.json()),
-  createSocio: (data) => fetch(`${BASE_URL}/socios`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then(r => r.json()),
-  updateSocio: (id, data) => fetch(`${BASE_URL}/socios/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then(r => r.json()),
-  deleteSocio: (id) => fetch(`${BASE_URL}/socios/${id}`, { method: "DELETE" }).then(r => r.json()),
+  getSociosSinMail: () => pedir(`/socios/sin-mail`),
+  getSocioByMail: (mail) => pedir(`/socios/by-mail/${encodeURIComponent(mail)}`),
+  getFamilia: (id) => pedir(`/socios/${id}/familia`),
+  createSocio: (data) => pedir(`/socios`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }),
+  updateSocio: (id, data) => pedir(`/socios/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }),
+  deleteSocio: (id) => pedir(`/socios/${id}`, { method: "DELETE" }),
 
   // Actividades
-  getActividades: () => fetch(`${BASE_URL}/actividades`).then(r => r.json()),
-  createActividad: (data) => fetch(`${BASE_URL}/actividades`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then(r => r.json()),
-  updateActividad: (id, data) => fetch(`${BASE_URL}/actividades/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then(r => r.json()),
-  deleteActividad: (id) => fetch(`${BASE_URL}/actividades/${id}`, { method: "DELETE" }).then(r => r.json()),
+  getActividades: () => pedir(`/actividades`),
+  createActividad: (data) => pedir(`/actividades`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }),
+  updateActividad: (id, data) => pedir(`/actividades/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }),
+  deleteActividad: (id) => pedir(`/actividades/${id}`, { method: "DELETE" }),
 
   // Planes
-  getPlanes: () => fetch(`${BASE_URL}/planes`).then(r => r.json()),
-  createPlan: (data) => fetch(`${BASE_URL}/planes`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then(r => r.json()),
-  updatePlan: (id, data) => fetch(`${BASE_URL}/planes/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then(r => r.json()),
-  deletePlan: (id) => fetch(`${BASE_URL}/planes/${id}`, { method: "DELETE" }).then(r => r.json()),
+  getPlanes: () => pedir(`/planes`),
+  createPlan: (data) => pedir(`/planes`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }),
+  updatePlan: (id, data) => pedir(`/planes/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }),
+  deletePlan: (id) => pedir(`/planes/${id}`, { method: "DELETE" }),
 
   // Inscripciones
-  getInscripciones: () => fetch(`${BASE_URL}/inscripciones`).then(r => r.json()),
-  createInscripcion: (data) => fetch(`${BASE_URL}/inscripciones`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then(r => r.json()),
-  updateInscripcion: (id, data) => fetch(`${BASE_URL}/inscripciones/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then(r => r.json()),
-  deleteInscripcion: (id) => fetch(`${BASE_URL}/inscripciones/${id}`, { method: "DELETE" }).then(r => r.json()),
+  getInscripciones: () => pedir(`/inscripciones`),
+  createInscripcion: (data) => pedir(`/inscripciones`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }),
+  updateInscripcion: (id, data) => pedir(`/inscripciones/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }),
+  deleteInscripcion: (id) => pedir(`/inscripciones/${id}`, { method: "DELETE" }),
 
   // Beneficios
-  getBeneficios: () => fetch(`${BASE_URL}/beneficios`).then(r => r.json()),
-  createBeneficio: (data) => fetch(`${BASE_URL}/beneficios`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then(r => r.json()),
-  updateBeneficio: (id, data) => fetch(`${BASE_URL}/beneficios/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then(r => r.json()),
-  deleteBeneficio: (id) => fetch(`${BASE_URL}/beneficios/${id}`, { method: "DELETE" }).then(r => r.json()),
+  getBeneficios: () => pedir(`/beneficios`),
+  createBeneficio: (data) => pedir(`/beneficios`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }),
+  updateBeneficio: (id, data) => pedir(`/beneficios/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }),
+  deleteBeneficio: (id) => pedir(`/beneficios/${id}`, { method: "DELETE" }),
 
   // Pagos / cuotas
-  getPagos: () => fetch(`${BASE_URL}/pagos`).then(r => r.json()),
-  getCuotasSocio: (id) => fetch(`${BASE_URL}/pagos/socio/${id}`).then(r => r.json()),
-  pagarCuota: (id) => fetch(`${BASE_URL}/pagos/${id}/pagar`, { method: "PUT" }).then(r => r.json()),
+  getPagos: () => pedir(`/pagos`),
+  getCuotasSocio: (id) => pedir(`/pagos/socio/${id}`),
+  pagarCuota: (id) => pedir(`/pagos/${id}/pagar`, { method: "PUT" }),
 
   // Registro de cuentas de socio (con aprobación del administrador)
-  registrarse: (mail, dni, contraseña) => fetch(`${BASE_URL}/usuarios/registro`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mail, dni, contraseña }) }).then(r => r.json()),
-  getSolicitudes: () => fetch(`${BASE_URL}/usuarios/solicitudes`).then(r => r.json()),
-  aprobarSolicitud: (id) => fetch(`${BASE_URL}/usuarios/${id}/aprobar`, { method: "PUT" }).then(r => r.json()),
-  rechazarSolicitud: (id) => fetch(`${BASE_URL}/usuarios/${id}/rechazar`, { method: "PUT" }).then(r => r.json()),
+  registrarse: (mail, dni, contraseña) => pedir(`/usuarios/registro`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mail, dni, contraseña }) }),
+  getSolicitudes: () => pedir(`/usuarios/solicitudes`),
+  aprobarSolicitud: (id) => pedir(`/usuarios/${id}/aprobar`, { method: "PUT" }),
+  rechazarSolicitud: (id) => pedir(`/usuarios/${id}/rechazar`, { method: "PUT" }),
 
   // Administradores y cambio de contraseña
-  getAdmins: () => fetch(`${BASE_URL}/usuarios/admins`).then(r => r.json()),
-  crearAdmin: (data) => fetch(`${BASE_URL}/usuarios/admins`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then(r => r.json()),
-  eliminarAdmin: (id, solicitante) => fetch(`${BASE_URL}/usuarios/admins/${id}?solicitante=${solicitante}`, { method: "DELETE" }).then(r => r.json()),
-  cambiarContrasena: (id, actual, nueva) => fetch(`${BASE_URL}/usuarios/cambiar-contrasena`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, actual, nueva }) }).then(r => r.json()),
+  getAdmins: () => pedir(`/usuarios/admins`),
+  crearAdmin: (data) => pedir(`/usuarios/admins`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }),
+  eliminarAdmin: (id) => pedir(`/usuarios/admins/${id}`, { method: "DELETE" }),
+  cambiarContrasena: (actual, nueva) => pedir(`/usuarios/cambiar-contrasena`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ actual, nueva }) }),
 
   // Login
-  login: (mail, contraseña) => fetch(`${BASE_URL}/usuarios/login`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mail, contraseña }) }).then(r => r.json()),
+  login: (mail, contraseña) => pedir(`/usuarios/login`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mail, contraseña }) }),
 
   // Recuperar contraseña
-  recuperarContrasena: (numeroSocio, dni, mail) => fetch(`${BASE_URL}/usuarios/recuperar-contrasena`, {
+  recuperarContrasena: (numeroSocio, dni, mail) => pedir(`/usuarios/recuperar-contrasena`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ numeroSocio, dni, mail })
-  }).then(r => r.json()),
+  }),
 }

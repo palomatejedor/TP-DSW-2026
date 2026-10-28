@@ -50,7 +50,7 @@ function CambiarContrasena() {
 
     setEnviando(true)
     try {
-      const data = await api.cambiarContrasena(usuario.id, actual, nueva)
+      const data = await api.cambiarContrasena(actual, nueva)
       if (data.error) {
         setError(data.error)
         return

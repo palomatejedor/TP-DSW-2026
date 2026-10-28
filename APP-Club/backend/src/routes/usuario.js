@@ -3,6 +3,7 @@ const bcrypt = require("bcryptjs")
 const router = express.Router()
 const { AppDataSource } = require("../database")
 const { enviarMailNuevaContraseña, generarContraseña } = require("../utils/mailer")
+const { firmarToken } = require("../middleware/auth")
 
 const getUsuarioRepo = () => AppDataSource.getRepository("Usuario")
 const getSocioRepo = () => AppDataSource.getRepository("Socio")
@@ -69,6 +70,7 @@ router.post("/login", async (req, res) => {
       }
     }
     res.json({
+      token: firmarToken(usuario),
       id: usuario.id,
       nombre: usuario.nombre,
       apellido: usuario.apellido,
@@ -82,11 +84,12 @@ router.post("/login", async (req, res) => {
 })
 
 // POST /usuarios/cambiar-contrasena
-// body: { id, actual, nueva }  -> el usuario elige su propia contraseña
+// body: { actual, nueva }  -> el usuario elige su propia contraseña (la cuenta sale del token)
 router.post("/cambiar-contrasena", async (req, res) => {
   try {
-    const { id, actual, nueva } = req.body
-    if (!id || !actual || !nueva) return res.status(400).json({ error: "Completá todos los campos" })
+    const { actual, nueva } = req.body
+    const id = req.usuario.id
+    if (!actual || !nueva) return res.status(400).json({ error: "Completá todos los campos" })
     if (String(nueva).length < 6) return res.status(400).json({ error: "La contraseña nueva debe tener al menos 6 caracteres" })
     if (actual === nueva) return res.status(400).json({ error: "La contraseña nueva debe ser distinta de la actual" })
 
@@ -151,11 +154,11 @@ router.post("/admins", async (req, res) => {
   }
 })
 
-// DELETE /usuarios/admins/:id?solicitante=ID  (nadie puede eliminar su propia cuenta)
+// DELETE /usuarios/admins/:id  (nadie puede eliminar su propia cuenta; el solicitante sale del token)
 router.delete("/admins/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id)
-    const solicitante = parseInt(req.query.solicitante)
+    const solicitante = req.usuario.id
     if (id === solicitante) return res.status(400).json({ error: "No podés eliminar tu propia cuenta" })
 
     const admin = await getUsuarioRepo().findOneBy({ id })
