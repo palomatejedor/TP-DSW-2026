@@ -14,6 +14,8 @@ module.exports = new EntitySchema({
     fecha_baja: { type: "date", nullable: true },
     estado: { type: "varchar" },
     categoria: { type: "varchar" },
+    // true cuando lo sacaron de un grupo familiar y todavía no eligió un plan individual
+    quitado_de_grupo: { type: "boolean", default: false },
   },
   relations: {
     plan: {

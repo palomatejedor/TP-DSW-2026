@@ -97,6 +97,18 @@ async function heredarPlanDelTitular(socioId) {
   if (pendientes.length) await pagoRepo.remove(pendientes)
 }
 
+// Cuando un socio sale de un grupo familiar queda SIN plan y con un aviso:
+// tiene que elegir un plan individual (mensual o anual) desde su página.
+// Si el titular se queda sin integrantes, deja de tener grupo y también tiene que elegir uno individual.
+async function dejarTitularSinGrupoSiQuedoSolo(titularId) {
+  const titular = await getSocioRepo().findOne({ where: { id: titularId }, relations: ["miembros"] })
+  if (!titular) return
+  const quedanMiembros = (titular.miembros || []).length > 0
+  if (!quedanMiembros && titular.plan && titular.plan.tipo === "Familiar") {
+    await getSocioRepo().update(titularId, { plan: null, quitado_de_grupo: true })
+  }
+}
+
 // Recalcula la categoría de todos los socios según su edad de hoy.
 // Se ejecuta como máximo una vez por hora, así quien cumple años pasa solo de categoría.
 let ultimaActualizacionCategorias = 0
@@ -321,6 +333,23 @@ router.put("/:id", async (req, res) => {
     // Un socio activo no puede tener fecha de baja (al reactivarlo se borra)
     if (body.estado === "Activo") body.fecha_baja = null
 
+    // Sale de un grupo familiar: queda sin plan y con aviso, hasta que elija uno individual
+    let exTitularId = null
+    if (body.titular === null) {
+      const actual = await getSocioRepo().findOne({ where: { id }, relations: ["titular"] })
+      if (actual && actual.titular) {
+        exTitularId = actual.titular.id
+        // Si el pedido ya trae un plan (ej.: un integrante que pasa a ser el nuevo titular), lo conserva
+        if (body.plan === undefined) {
+          body.plan = null
+          body.quitado_de_grupo = true
+        }
+      }
+    }
+
+    // Si entra a un grupo o elige un plan, se borra el aviso
+    if ((body.titular && body.titular.id) || (body.plan && body.plan.id)) body.quitado_de_grupo = false
+
     if (body.titular && body.titular.id) {
       const error = await validarTitular(body.titular.id, id)
       if (error) return res.status(400).json({ error })
@@ -349,6 +378,9 @@ router.put("/:id", async (req, res) => {
 
     // Si lo sumaron a un grupo familiar, pasa al plan del titular
     if (body.titular && body.titular.id) await heredarPlanDelTitular(id)
+
+    // Si se fue el último integrante, el titular también pierde el plan familiar
+    if (exTitularId) await dejarTitularSinGrupoSiQuedoSolo(exTitularId)
 
     const socio = await getSocioRepo().findOne({ where: { id }, relations: ["titular"] })
     res.json(socio)
