@@ -158,7 +158,10 @@ function Socios() {
     setErrorGrupo('')
     const elegidoId = parseInt(nuevoTitularId)
 
-    const r1 = await api.updateSocio(elegidoId, { titular: null })
+    // El nuevo titular se queda con el plan del grupo (no pasa a "sin plan")
+    const elegido = grupoAfectado.miembros.find(m => m.id === elegidoId)
+    const planDelGrupo = elegido?.plan || grupoAfectado.titular.plan
+    const r1 = await api.updateSocio(elegidoId, { titular: null, plan: planDelGrupo ? { id: planDelGrupo.id } : undefined })
     if (r1.error) { setErrorGrupo(r1.error); return }
 
     for (const m of grupoAfectado.miembros) {
@@ -475,7 +478,7 @@ function Socios() {
 
               <p className="mb-2">Opción 2: no asignar un nuevo titular</p>
               <p className="text-muted small">
-                El grupo familiar se deshace: los {grupoAfectado.miembros.length} integrantes quedan como socios independientes, activos, cada uno con su propio plan.
+                El grupo familiar se deshace: los {grupoAfectado.miembros.length} integrantes quedan como socios independientes y sin plan. Cada uno va a ver un aviso en su página para elegir su plan individual (mensual o anual).
               </p>
               <Button variant="outline-danger" className="w-100" onClick={continuarDeshaciendoGrupo}>
                 Deshacer el grupo y continuar con la baja

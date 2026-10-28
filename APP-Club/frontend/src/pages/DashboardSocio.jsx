@@ -49,6 +49,28 @@ function DashboardSocio() {
           <p className="text-muted mb-0">Esto es lo que necesitás de tu club.</p>
         </div>
 
+        {socio?.quitado_de_grupo && !socio?.plan && (
+          <div style={{
+            display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 14,
+            borderRadius: 16, padding: '18px 22px', marginBottom: 24,
+            background: 'rgba(255,193,7,0.10)', border: '1px solid rgba(255,193,7,0.35)'
+          }}>
+            <div style={{ flex: '1 1 260px' }}>
+              <div style={{ fontWeight: 600, color: '#ffd666', marginBottom: 3 }}>Fuiste quitado del grupo familiar</div>
+              <div style={{ fontSize: 14, color: '#d9dcea' }}>
+                Para seguir usando el club, elegí tu plan individual (mensual o anual).
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate('/socio/planes')}
+              style={{ height: 42, padding: '0 20px', borderRadius: 12, border: 'none', background: '#ffc107', color: '#1a1a1a', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
+            >
+              Elegir mi plan →
+            </button>
+          </div>
+        )}
+
         <div style={{
           position: 'relative', overflow: 'hidden', borderRadius: 22, padding: '28px 32px', marginBottom: 32,
           background: 'linear-gradient(120deg, #2b50ff 0%, #1a2f8f 60%, #101a2e 100%)',

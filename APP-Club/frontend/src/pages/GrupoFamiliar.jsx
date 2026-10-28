@@ -124,7 +124,7 @@ function GrupoFamiliar() {
   }
 
   const quitarDelGrupo = async (socio) => {
-    if (!confirm(`¿Sacar a ${socio.nombre} ${socio.apellido} del grupo familiar?`)) return
+    if (!confirm(`¿Sacar a ${socio.nombre} ${socio.apellido} del grupo familiar? Va a quedar sin plan y tendrá que elegir uno individual desde su página.`)) return
     const resultado = await api.updateSocio(socio.id, { titular: null })
     if (resultado.error) {
       alert(resultado.error)
@@ -134,7 +134,7 @@ function GrupoFamiliar() {
 
   const eliminarGrupo = async (grupo) => {
     const confirmar = confirm(
-      `¿Eliminar el grupo familiar de ${grupo.titular.nombre} ${grupo.titular.apellido}? Los ${grupo.miembros.length} integrantes quedarán como socios independientes, activos, cada uno con su propio plan.`
+      `¿Eliminar el grupo familiar de ${grupo.titular.nombre} ${grupo.titular.apellido}? Los ${grupo.miembros.length} integrantes quedarán como socios independientes y sin plan: cada uno va a tener que elegir su plan individual desde su página.`
     )
     if (!confirmar) return
 

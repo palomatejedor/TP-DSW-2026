@@ -44,7 +44,8 @@ function PlanesSocio() {
       setEsTitular(titular)
 
       const planesData = await api.getPlanes()
-      setPlanes(planesData.filter(p => p.estado === 'Activo'))
+      // Quien fue quitado de un grupo familiar solo puede elegir planes individuales
+      setPlanes(planesData.filter(p => p.estado === 'Activo' && (!miSocio.quitado_de_grupo || p.tipo !== 'Familiar')))
     } catch {
       setError('Error al conectar con el servidor.')
     } finally {
@@ -123,10 +124,18 @@ function PlanesSocio() {
 
         {exito && <Alert variant="success">{exito}</Alert>}
 
-        {socio?.plan && (
+        {socio?.quitado_de_grupo && !socio?.plan && (
+          <Alert variant="warning">
+            <b>Fuiste quitado del grupo familiar.</b> Para seguir usando el club, elegí tu plan individual (mensual o anual).
+          </Alert>
+        )}
+
+        {socio?.plan ? (
           <Alert variant="info">
             Tu plan actual es: <b>{socio.plan.nombre}</b>
           </Alert>
+        ) : !socio?.quitado_de_grupo && (
+          <Alert variant="secondary">Todavía no tenés un plan. Elegí uno para empezar.</Alert>
         )}
 
         <Row className="g-3">
