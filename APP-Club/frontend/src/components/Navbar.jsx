@@ -16,6 +16,7 @@ const ICONOS = {
   cuota: 'M12 3v18M16.5 7.5c-.8-1.2-2.4-2-4.5-2-2.6 0-4.5 1.2-4.5 3s1.6 2.6 4.5 3 4.5 1.2 4.5 3-1.9 3-4.5 3c-2.1 0-3.7-.8-4.5-2',
   salir: 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9',
   solicitudes: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M22 11h-6',
+  clave: 'M5 11h14v9H5zM8 11V8a4 4 0 0 1 8 0v3M12 15v2',
   menu: 'M4 6h16M4 12h16M4 18h16',
   cerrar: 'M6 6l12 12M18 6L6 18',
 }
@@ -184,6 +185,18 @@ function NavBar({ rol }) {
               ))}
             </div>
           ))}
+
+          <div className="sc-nav-grupo">
+            <div className="sc-nav-titulo">Cuenta</div>
+            <a
+              href="/cambiar-contrasena"
+              className="sc-link"
+              onClick={(e) => { e.preventDefault(); irA('/cambiar-contrasena') }}
+            >
+              <Icono nombre="clave" />
+              Cambiar contraseña
+            </a>
+          </div>
         </nav>
 
         <div className="sc-usuario">
