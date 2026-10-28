@@ -62,7 +62,7 @@ function Administradores() {
 
   const eliminar = async (a) => {
     if (!confirm(`¿Seguro que querés eliminar al administrador ${a.nombre} ${a.apellido}?`)) return
-    const resp = await api.eliminarAdmin(a.id, miId)
+    const resp = await api.eliminarAdmin(a.id)
     if (resp.error) { setError(resp.error); return }
     setError('')
     await cargar()
